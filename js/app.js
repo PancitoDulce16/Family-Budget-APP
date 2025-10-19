@@ -17,6 +17,8 @@ import { createSearchBar, filterTransactions } from './search.js';
 import { initializeBudgets, createBudgetWidget, getCurrentBudgets } from './budgets.js';
 import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
+import { initializeDarkMode } from './dark-mode.js';
+import { createReceiptGallery } from './receipt-gallery.js';
 import {
   collection,
   doc,
@@ -68,6 +70,7 @@ window.initializeApp = async (user) => {
     initializeBalance(userFamilyGroup, familyMembers);
     initializeCategories(userFamilyGroup, familyMembers);
     initializeBudgets(userFamilyGroup);
+    initializeDarkMode();
 
     // Add search bar to dashboard
     addSearchToDashboard();
@@ -206,6 +209,10 @@ async function loadAllTransactionsForTrends() {
   // Add trends chart
   const trendsWidget = createTrendsChart(allTransactions);
   container.appendChild(trendsWidget);
+
+  // Add receipt gallery
+  const galleryWidget = createReceiptGallery(allTransactions);
+  container.appendChild(galleryWidget);
 }
 
 // Apply search filters
