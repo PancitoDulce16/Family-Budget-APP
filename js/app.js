@@ -1,10 +1,20 @@
-// Main Application Module - Enhanced Version
+// Main Application Module - Complete Enhanced Version
 import { auth, db } from './firebase-config.js';
 import { getCurrentUser, showLoading, showNotification } from './auth.js';
 import { setupNavigation } from './navigation.js';
 import { initializeTasks } from './tasks.js';
 import { initializeBalance, calculateBalance } from './balance.js';
 import { initializeCategories, refreshCategories } from './categories.js';
+import {
+  editTransaction,
+  deleteTransaction,
+  openEditModal,
+  getCurrentEditingTransaction,
+  clearCurrentEditingTransaction,
+  createTransactionActions
+} from './transactions.js';
+import { createSearchBar, filterTransactions } from './search.js';
+import { initializeBudgets, createBudgetWidget, getCurrentBudgets } from './budgets.js';
 import {
   collection,
   doc,
@@ -23,7 +33,9 @@ let currentUser = null;
 let userFamilyGroup = null;
 let familyMembers = [];
 let currentTransactions = [];
+let filteredTransactions = [];
 let expenseChart = null;
+let searchFilters = { query: '', category: '', type: '' };
 
 // UI Elements
 const addExpenseBtn = document.getElementById('add-expense-btn');
@@ -53,6 +65,10 @@ window.initializeApp = async (user) => {
     initializeTasks(userFamilyGroup, familyMembers);
     initializeBalance(userFamilyGroup, familyMembers);
     initializeCategories(userFamilyGroup, familyMembers);
+    initializeBudgets(userFamilyGroup);
+
+    // Add search bar to dashboard
+    addSearchToDashboard();
 
     // Setup view change handler
     window.onViewChange = handleViewChange;
@@ -64,6 +80,8 @@ function handleViewChange(viewName) {
     calculateBalance();
   } else if (viewName === 'categories') {
     refreshCategories();
+  } else if (viewName === 'dashboard') {
+    updateBudgetWidget();
   }
 }
 
@@ -94,6 +112,25 @@ async function loadFamilyMembers() {
     id: doc.id,
     ...doc.data()
   }));
+}
+
+// Add search bar to dashboard
+function addSearchToDashboard() {
+  const dashboardView = document.getElementById('dashboard-view');
+  const quickActions = dashboardView.querySelector('.grid');
+
+  const searchBar = createSearchBar((filters) => {
+    searchFilters = filters;
+    applySearchFilters();
+  });
+
+  dashboardView.insertBefore(searchBar, quickActions);
+}
+
+// Apply search filters
+function applySearchFilters() {
+  filteredTransactions = filterTransactions(currentTransactions, searchFilters);
+  updateRecentActivity();
 }
 
 // Populate "Paid By" dropdown
@@ -141,9 +178,20 @@ function populateSharedMembers() {
 
 // Setup event listeners
 function setupEventListeners() {
-  addExpenseBtn?.addEventListener('click', () => openTransactionModal('expense'));
-  addIncomeBtn?.addEventListener('click', () => openTransactionModal('income'));
-  closeModalBtn?.addEventListener('click', closeTransactionModal);
+  addExpenseBtn?.addEventListener('click', () => {
+    clearCurrentEditingTransaction();
+    openTransactionModal('expense');
+  });
+
+  addIncomeBtn?.addEventListener('click', () => {
+    clearCurrentEditingTransaction();
+    openTransactionModal('income');
+  });
+
+  closeModalBtn?.addEventListener('click', () => {
+    clearCurrentEditingTransaction();
+    closeTransactionModal();
+  });
 
   typeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -237,33 +285,35 @@ async function handleTransactionSubmit(e) {
     const receiptFile = receiptInput.files[0];
     const isShared = sharedCheckbox.checked;
 
-    if (!receiptFile) {
+    // Check if editing
+    const editingTransaction = getCurrentEditingTransaction();
+
+    let receiptBase64 = editingTransaction?.receiptBase64 || null;
+
+    // If new receipt uploaded
+    if (receiptFile) {
+      if (receiptFile.size > 1024 * 1024) {
+        showNotification('La imagen debe ser menor a 1MB. Intenta comprimirla.', 'error');
+        showLoading(false);
+        return;
+      }
+      receiptBase64 = await convertFileToBase64(receiptFile);
+    } else if (!editingTransaction) {
       showNotification('Debes subir una foto del comprobante', 'error');
       showLoading(false);
       return;
     }
 
-    if (receiptFile.size > 1024 * 1024) {
-      showNotification('La imagen debe ser menor a 1MB. Intenta comprimirla.', 'error');
-      showLoading(false);
-      return;
-    }
-
-    const receiptBase64 = await convertFileToBase64(receiptFile);
-
     const transactionData = {
-      familyGroupId: userFamilyGroup,
       type,
       amount,
       description,
       category,
       date: date,
       paidBy,
-      addedBy: currentUser.uid,
       receiptBase64: receiptBase64,
       isShared,
-      sharedWith: [],
-      createdAt: serverTimestamp()
+      sharedWith: []
     };
 
     if (isShared) {
@@ -283,12 +333,23 @@ async function handleTransactionSubmit(e) {
       transactionData.sharedWith = sharedMembers;
     }
 
-    await addDoc(collection(db, 'transactions'), transactionData);
+    if (editingTransaction) {
+      // Update existing transaction
+      await editTransaction(editingTransaction.id, transactionData);
+      showNotification('Transacción actualizada', 'success');
+    } else {
+      // Create new transaction
+      transactionData.familyGroupId = userFamilyGroup;
+      transactionData.addedBy = currentUser.uid;
+      transactionData.createdAt = serverTimestamp();
 
-    showNotification('Transacción guardada exitosamente', 'success');
+      await addDoc(collection(db, 'transactions'), transactionData);
+      showNotification('Transacción guardada exitosamente', 'success');
+    }
+
+    clearCurrentEditingTransaction();
     closeTransactionModal();
 
-    // Refresh categories view if we're on it
     if (window.onViewChange) {
       refreshCategories();
     }
@@ -321,9 +382,13 @@ async function loadDashboard() {
       ...doc.data()
     }));
 
+    filteredTransactions = currentTransactions;
+    applySearchFilters();
+
     updateDashboardStats();
     updateRecentActivity();
     updateExpenseChart();
+    updateBudgetWidget();
     calculateBalance();
   });
 }
@@ -360,7 +425,7 @@ function updateRecentActivity() {
   const recentActivityDiv = document.getElementById('recent-activity');
   recentActivityDiv.innerHTML = '';
 
-  const recent = currentTransactions.slice(0, 5);
+  const recent = filteredTransactions.slice(0, 10);
 
   if (recent.length === 0) {
     recentActivityDiv.innerHTML = '<p class="text-gray-500 text-sm">No hay transacciones recientes</p>';
@@ -372,20 +437,33 @@ function updateRecentActivity() {
     const memberName = member ? member.displayName : 'Desconocido';
 
     const div = document.createElement('div');
-    div.className = 'flex justify-between items-center border-b pb-2 cursor-pointer hover:bg-gray-50 p-2 rounded';
+    div.className = 'border-b pb-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition';
     div.innerHTML = `
-      <div>
-        <p class="font-medium text-sm">${transaction.description}</p>
-        <p class="text-xs text-gray-500">${memberName} - ${transaction.category}</p>
+      <div class="flex justify-between items-start">
+        <div class="flex-1">
+          <p class="font-medium text-sm">${transaction.description}</p>
+          <p class="text-xs text-gray-500">${memberName} - ${transaction.category}</p>
+        </div>
+        <p class="font-semibold ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}">
+          ${transaction.type === 'expense' ? '-' : '+'}$${transaction.amount.toFixed(2)}
+        </p>
       </div>
-      <p class="font-semibold ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}">
-        ${transaction.type === 'expense' ? '-' : '+'}$${transaction.amount.toFixed(2)}
-      </p>
     `;
 
-    div.addEventListener('click', () => {
-      if (transaction.receiptBase64) {
-        showReceiptModal(transaction.receiptBase64, transaction.description);
+    // Add edit/delete buttons
+    const actions = createTransactionActions(
+      transaction,
+      (t) => openEditModal(t, familyMembers),
+      () => applySearchFilters()
+    );
+    div.appendChild(actions);
+
+    // Click to view receipt
+    div.addEventListener('click', (e) => {
+      if (!e.target.closest('button')) {
+        if (transaction.receiptBase64) {
+          showReceiptModal(transaction.receiptBase64, transaction.description);
+        }
       }
     });
 
@@ -412,7 +490,6 @@ function updateExpenseChart() {
   const ctx = document.getElementById('expense-chart');
   if (!ctx) return;
 
-  // Destroy previous chart if exists
   if (expenseChart) {
     expenseChart.destroy();
   }
@@ -420,8 +497,13 @@ function updateExpenseChart() {
   const hasData = Object.values(categoryTotals).some(val => val > 0);
 
   if (!hasData) {
-    ctx.parentElement.innerHTML = '<p class="text-gray-500 text-sm text-center">No hay gastos este mes</p>';
+    ctx.parentElement.innerHTML = '<div class="flex items-center justify-center h-64"><p class="text-gray-500 text-sm text-center">No hay gastos este mes</p></div>';
     return;
+  }
+
+  // Ensure canvas exists
+  if (!ctx.getContext) {
+    ctx.parentElement.innerHTML = '<canvas id="expense-chart"></canvas>';
   }
 
   expenseChart = new Chart(ctx, {
@@ -436,10 +518,10 @@ function updateExpenseChart() {
           categoryTotals.papas
         ],
         backgroundColor: [
-          '#9333EA', // purple
-          '#3B82F6', // blue
-          '#10B981', // green
-          '#F97316'  // orange
+          '#9333EA',
+          '#3B82F6',
+          '#10B981',
+          '#F97316'
         ],
         borderWidth: 2,
         borderColor: '#ffffff'
@@ -464,6 +546,37 @@ function updateExpenseChart() {
       }
     }
   });
+}
+
+function updateBudgetWidget() {
+  const categoryTotals = {
+    casa: 0,
+    servicios: 0,
+    elias: 0,
+    papas: 0
+  };
+
+  currentTransactions.forEach(transaction => {
+    if (transaction.type === 'expense') {
+      if (categoryTotals.hasOwnProperty(transaction.category)) {
+        categoryTotals[transaction.category] += transaction.amount;
+      }
+    }
+  });
+
+  // Check if widget already exists
+  let budgetContainer = document.getElementById('budget-widget-container');
+
+  if (!budgetContainer) {
+    const dashboardView = document.getElementById('dashboard-view');
+    budgetContainer = document.createElement('div');
+    budgetContainer.id = 'budget-widget-container';
+    dashboardView.appendChild(budgetContainer);
+  }
+
+  budgetContainer.innerHTML = '';
+  const widget = createBudgetWidget(categoryTotals, userFamilyGroup);
+  budgetContainer.appendChild(widget);
 }
 
 function convertFileToBase64(file) {
