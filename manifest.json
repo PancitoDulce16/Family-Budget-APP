@@ -1,0 +1,22 @@
+{
+  "name": "Family Budget Manager",
+  "short_name": "FamilyBudget",
+  "description": "Gestiona tus gastos familiares de forma colaborativa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

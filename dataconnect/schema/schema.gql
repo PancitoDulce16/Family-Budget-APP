@@ -1,0 +1,52 @@
+type Family @table {
+  name: String!
+  currency: String
+  createdAt: Timestamp!
+}
+
+type User @table {
+  family: Family
+  displayName: String!
+  email: String
+  photoUrl: String
+  createdAt: Timestamp!
+}
+
+type Category @table {
+  family: Family
+  name: String!
+  type: String!
+  createdAt: Timestamp!
+}
+
+type Transaction @table {
+  family: Family
+  user: User
+  category: Category
+  amount: Float!
+  type: String!
+  date: Date!
+  description: String!
+  isRecurring: Boolean
+  recurrenceFrequency: String
+  createdAt: Timestamp!
+}
+
+type Budget @table {
+  family: Family
+  category: Category
+  amount: Float!
+  startDate: Date!
+  endDate: Date!
+  createdAt: Timestamp!
+}
+
+type SavingsGoal @table {
+  family: Family
+  name: String!
+  targetAmount: Float!
+  currentAmount: Float
+  targetDate: Date
+  description: String
+  createdAt: Timestamp!
+}

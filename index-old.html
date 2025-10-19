@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Budget Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
+    <link rel="apple-touch-icon" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
+</head>
+<body class="bg-gray-50">
+    <!-- Auth Container -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-indigo-600 mb-2">Family Budget Manager</h1>
+                <p class="text-gray-600">Gestiona tus gastos familiares de forma colaborativa</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form">
+                <h2 class="text-xl font-semibold mb-4">Iniciar Sesión</h2>
+                <form id="email-login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="login-email" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <input type="password" id="login-password" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
+                        Iniciar Sesión
+                    </button>
+                </form>
+
+                <div class="mt-4">
+                    <button id="google-login-btn"
+                        class="w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5">
+                        Continuar con Google
+                    </button>
+                </div>
+
+                <p class="mt-4 text-center text-sm text-gray-600">
+                    ¿No tienes cuenta?
+                    <button id="show-register" class="text-indigo-600 hover:underline">Regístrate</button>
+                </p>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="hidden">
+                <h2 class="text-xl font-semibold mb-4">Crear Cuenta</h2>
+                <form id="email-register-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <input type="text" id="register-name" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="register-email" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <input type="password" id="register-password" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
+                        Crear Cuenta
+                    </button>
+                </form>
+
+                <p class="mt-4 text-center text-sm text-gray-600">
+                    ¿Ya tienes cuenta?
+                    <button id="show-login" class="text-indigo-600 hover:underline">Inicia sesión</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container (Hidden initially) -->
+    <div id="app-container" class="hidden">
+        <!-- Navigation -->
+        <nav class="bg-indigo-600 text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <h1 class="text-xl font-bold">Family Budget</h1>
+                <div class="flex items-center gap-4">
+                    <span id="user-name" class="text-sm"></span>
+                    <img id="user-photo" class="w-8 h-8 rounded-full" alt="User">
+                    <button id="logout-btn" class="text-sm hover:underline">Salir</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto p-4">
+            <!-- Dashboard View -->
+            <div id="dashboard-view">
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <button id="add-expense-btn"
+                        class="bg-red-500 text-white py-6 px-4 rounded-lg hover:bg-red-600 transition text-lg font-semibold">
+                        + Añadir Gasto
+                    </button>
+                    <button id="add-income-btn"
+                        class="bg-green-500 text-white py-6 px-4 rounded-lg hover:bg-green-600 transition text-lg font-semibold">
+                        + Añadir Ingreso
+                    </button>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <p class="text-gray-600 text-sm mb-2">Gastos del Mes</p>
+                        <p id="total-expenses" class="text-2xl font-bold text-red-600">$0</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <p class="text-gray-600 text-sm mb-2">Ingresos del Mes</p>
+                        <p id="total-income" class="text-2xl font-bold text-green-600">$0</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <p class="text-gray-600 text-sm mb-2">Balance</p>
+                        <p id="balance" class="text-2xl font-bold text-indigo-600">$0</p>
+                    </div>
+                </div>
+
+                <!-- Chart and Recent Activity -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="font-semibold text-lg mb-4">Gastos por Categoría</h3>
+                        <canvas id="expense-chart"></canvas>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="font-semibold text-lg mb-4">Actividad Reciente</h3>
+                        <div id="recent-activity" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- Balance Between Members -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="font-semibold text-lg mb-4">Balance entre Miembros</h3>
+                    <div id="member-balance" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="transaction-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="modal-title" class="text-2xl font-bold">Añadir Transacción</h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+
+                <form id="transaction-form" class="space-y-4">
+                    <!-- Type Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                        <div class="flex gap-4">
+                            <button type="button" data-type="expense"
+                                class="type-btn flex-1 py-2 px-4 rounded-md border-2 border-red-500 text-red-500 hover:bg-red-50 transition">
+                                Gasto
+                            </button>
+                            <button type="button" data-type="income"
+                                class="type-btn flex-1 py-2 px-4 rounded-md border-2 border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+                                Ingreso
+                            </button>
+                        </div>
+                        <input type="hidden" id="transaction-type" value="expense">
+                    </div>
+
+                    <!-- Amount -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+                        <input type="number" id="transaction-amount" step="0.01" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <input type="text" id="transaction-description" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                        <select id="transaction-category" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Seleccionar...</option>
+                            <option value="casa">Casa</option>
+                            <option value="servicios">Servicios</option>
+                            <option value="elias">Elías</option>
+                            <option value="papas">Papás</option>
+                        </select>
+                    </div>
+
+                    <!-- Date -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                        <input type="date" id="transaction-date" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <!-- Paid By -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pagado por</label>
+                        <select id="transaction-paidby" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+
+                    <!-- Receipt Photo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Foto del Comprobante *</label>
+                        <input type="file" id="transaction-receipt" accept="image/*" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div id="receipt-preview" class="mt-2 hidden">
+                            <img id="preview-image" class="max-h-40 rounded-md" alt="Preview">
+                        </div>
+                    </div>
+
+                    <!-- Shared Expense -->
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="transaction-shared"
+                                class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                            <span class="text-sm font-medium text-gray-700">¿Es un gasto compartido?</span>
+                        </label>
+                    </div>
+
+                    <!-- Shared Options (Hidden by default) -->
+                    <div id="shared-options" class="hidden space-y-2">
+                        <p class="text-sm text-gray-600">Dividir entre:</p>
+                        <div id="shared-members"></div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit"
+                        class="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition font-semibold">
+                        Guardar Transacción
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p class="mt-4 text-gray-700">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
