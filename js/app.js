@@ -15,6 +15,8 @@ import {
 } from './transactions.js';
 import { createSearchBar, filterTransactions } from './search.js';
 import { initializeBudgets, createBudgetWidget, getCurrentBudgets } from './budgets.js';
+import { createExportWidget } from './export.js';
+import { createTrendsChart, createComparisonWidget } from './trends.js';
 import {
   collection,
   doc,
@@ -69,6 +71,9 @@ window.initializeApp = async (user) => {
 
     // Add search bar to dashboard
     addSearchToDashboard();
+
+    // Add export and trends widgets
+    addAnalyticsWidgets();
 
     // Setup view change handler
     window.onViewChange = handleViewChange;
@@ -125,6 +130,82 @@ function addSearchToDashboard() {
   });
 
   dashboardView.insertBefore(searchBar, quickActions);
+}
+
+// Add analytics widgets (export, trends, comparison)
+function addAnalyticsWidgets() {
+  const dashboardView = document.getElementById('dashboard-view');
+
+  // Create container for analytics widgets
+  const analyticsContainer = document.createElement('div');
+  analyticsContainer.id = 'analytics-widgets-container';
+  analyticsContainer.className = 'mt-6';
+
+  dashboardView.appendChild(analyticsContainer);
+}
+
+// Update analytics widgets with transaction data
+function updateAnalyticsWidgets() {
+  const container = document.getElementById('analytics-widgets-container');
+  if (!container) return;
+
+  // Clear existing widgets
+  container.innerHTML = '';
+
+  // Get family group name
+  const familyGroupName = userFamilyGroup || 'Mi Familia';
+
+  // Calculate category totals
+  const categoryTotals = {
+    casa: 0,
+    servicios: 0,
+    elias: 0,
+    papas: 0
+  };
+
+  currentTransactions.forEach(transaction => {
+    if (transaction.type === 'expense') {
+      if (categoryTotals.hasOwnProperty(transaction.category)) {
+        categoryTotals[transaction.category] += transaction.amount;
+      }
+    }
+  });
+
+  // Add export widget
+  const exportWidget = createExportWidget(currentTransactions, familyGroupName, categoryTotals);
+  container.appendChild(exportWidget);
+
+  // Add trends chart (if we have transactions)
+  if (currentTransactions.length > 0) {
+    // Load all transactions for trends (not just current month)
+    loadAllTransactionsForTrends();
+  }
+}
+
+// Load all transactions for trends chart
+async function loadAllTransactionsForTrends() {
+  const allTransactionsQuery = query(
+    collection(db, 'transactions'),
+    where('familyGroupId', '==', userFamilyGroup),
+    orderBy('date', 'desc')
+  );
+
+  const snapshot = await getDocs(allTransactionsQuery);
+  const allTransactions = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  const container = document.getElementById('analytics-widgets-container');
+  if (!container) return;
+
+  // Add comparison widget
+  const comparisonWidget = createComparisonWidget(allTransactions);
+  container.appendChild(comparisonWidget);
+
+  // Add trends chart
+  const trendsWidget = createTrendsChart(allTransactions);
+  container.appendChild(trendsWidget);
 }
 
 // Apply search filters
@@ -389,6 +470,7 @@ async function loadDashboard() {
     updateRecentActivity();
     updateExpenseChart();
     updateBudgetWidget();
+    updateAnalyticsWidgets();
     calculateBalance();
   });
 }
