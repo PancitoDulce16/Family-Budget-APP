@@ -7,197 +7,257 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4F46E5">
+    <meta name="theme-color" content="#10B981">
     <link rel="icon" type="image/png" sizes="32x32" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
     <link rel="apple-touch-icon" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <!-- Auth Container -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-fadeIn">
             <div class="text-center mb-8">
-                <div class="text-6xl mb-4">💰</div>
-                <h1 class="text-3xl font-bold text-indigo-600 mb-2">Family Budget Manager</h1>
+                <div class="text-7xl mb-4 animate-bounce">💰</div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                    Family Budget Manager
+                </h1>
                 <p class="text-gray-600">Gestiona tus gastos familiares de forma colaborativa</p>
             </div>
 
             <!-- Login Form -->
             <div id="login-form">
-                <h2 class="text-xl font-semibold mb-4">Iniciar Sesión</h2>
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Iniciar Sesión</h2>
                 <form id="email-login-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input type="email" id="login-email" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
                         <input type="password" id="login-password" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                     </div>
                     <button type="submit"
-                        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
+                        class="w-full gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition font-semibold shadow-lg">
                         Iniciar Sesión
                     </button>
                 </form>
 
                 <div class="mt-4">
                     <button id="google-login-btn"
-                        class="w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                        class="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2 font-medium shadow-md">
                         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5">
                         Continuar con Google
                     </button>
                 </div>
 
-                <p class="mt-4 text-center text-sm text-gray-600">
+                <p class="mt-6 text-center text-sm text-gray-600">
                     ¿No tienes cuenta?
-                    <button id="show-register" class="text-indigo-600 hover:underline">Regístrate</button>
+                    <button id="show-register" class="text-green-600 hover:text-green-700 font-semibold">Regístrate</button>
                 </p>
             </div>
 
             <!-- Register Form -->
             <div id="register-form" class="hidden">
-                <h2 class="text-xl font-semibold mb-4">Crear Cuenta</h2>
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Crear Cuenta</h2>
                 <form id="email-register-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                         <input type="text" id="register-name" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input type="email" id="register-email" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
                         <input type="password" id="register-password" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                     </div>
                     <button type="submit"
-                        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
+                        class="w-full gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition font-semibold shadow-lg">
                         Crear Cuenta
                     </button>
                 </form>
 
-                <p class="mt-4 text-center text-sm text-gray-600">
+                <p class="mt-6 text-center text-sm text-gray-600">
                     ¿Ya tienes cuenta?
-                    <button id="show-login" class="text-indigo-600 hover:underline">Inicia sesión</button>
+                    <button id="show-login" class="text-green-600 hover:text-green-700 font-semibold">Inicia sesión</button>
                 </p>
             </div>
         </div>
     </div>
 
-    <!-- App Container (Hidden initially) -->
+    <!-- App Container -->
     <div id="app-container" class="hidden min-h-screen flex flex-col">
         <!-- Navigation -->
-        <nav class="bg-indigo-600 text-white shadow-lg">
+        <nav class="gradient-bg text-white shadow-xl sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 py-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center gap-4">
-                        <button id="menu-toggle" class="lg:hidden text-white">
+                        <button id="menu-toggle" class="lg:hidden text-white hover:bg-white/20 p-2 rounded-lg transition">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                             </svg>
                         </button>
-                        <h1 class="text-xl font-bold">💰 Family Budget</h1>
+                        <h1 class="text-xl font-bold flex items-center gap-2">
+                            <span>💰</span>
+                            <span>Family Budget</span>
+                        </h1>
                     </div>
                     <div class="flex items-center gap-4">
-                        <span id="user-name" class="text-sm hidden md:inline"></span>
-                        <img id="user-photo" class="w-8 h-8 rounded-full" alt="User">
-                        <button id="logout-btn" class="text-sm hover:underline">Salir</button>
+                        <span id="user-name" class="text-sm hidden md:inline font-medium"></span>
+                        <img id="user-photo" class="w-10 h-10 rounded-full border-2 border-white shadow-lg" alt="User">
+                        <button id="logout-btn" class="text-sm hover:bg-white/20 px-3 py-2 rounded-lg transition font-medium">Salir</button>
                     </div>
                 </div>
 
                 <!-- Desktop Navigation -->
-                <div class="hidden lg:flex gap-4 mt-4">
-                    <button class="nav-btn px-4 py-2 rounded hover:bg-indigo-700" data-view="dashboard">Dashboard</button>
-                    <button class="nav-btn px-4 py-2 rounded hover:bg-indigo-700" data-view="categories">Categorías</button>
-                    <button class="nav-btn px-4 py-2 rounded hover:bg-indigo-700" data-view="tasks">Tareas</button>
-                    <button class="nav-btn px-4 py-2 rounded hover:bg-indigo-700" data-view="balance">Balance</button>
+                <div class="hidden lg:flex gap-2 mt-4">
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium active-nav" data-view="dashboard">
+                        📊 Dashboard
+                    </button>
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium" data-view="categories">
+                        📁 Categorías
+                    </button>
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium" data-view="tasks">
+                        ✓ Tareas
+                    </button>
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium" data-view="balance">
+                        💵 Balance
+                    </button>
                 </div>
             </div>
         </nav>
 
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden lg:hidden bg-indigo-500 text-white">
+        <div id="mobile-menu" class="hidden lg:hidden bg-green-700 text-white shadow-lg">
             <div class="px-4 py-2 space-y-2">
-                <button class="nav-btn-mobile w-full text-left px-4 py-2 rounded hover:bg-indigo-600" data-view="dashboard">Dashboard</button>
-                <button class="nav-btn-mobile w-full text-left px-4 py-2 rounded hover:bg-indigo-600" data-view="categories">Categorías</button>
-                <button class="nav-btn-mobile w-full text-left px-4 py-2 rounded hover:bg-indigo-600" data-view="tasks">Tareas</button>
-                <button class="nav-btn-mobile w-full text-left px-4 py-2 rounded hover:bg-indigo-600" data-view="balance">Balance</button>
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium active-nav-mobile" data-view="dashboard">
+                    📊 Dashboard
+                </button>
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium" data-view="categories">
+                    📁 Categorías
+                </button>
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium" data-view="tasks">
+                    ✓ Tareas
+                </button>
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium" data-view="balance">
+                    💵 Balance
+                </button>
             </div>
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 max-w-7xl mx-auto w-full p-4">
+        <div class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
             <!-- Dashboard View -->
-            <div id="dashboard-view" class="view-content">
+            <div id="dashboard-view" class="view-content animate-fadeIn">
                 <!-- Quick Actions -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <button id="add-expense-btn"
-                        class="bg-red-500 text-white py-6 px-4 rounded-lg hover:bg-red-600 transition text-lg font-semibold shadow-lg">
+                        class="bg-gradient-to-r from-red-500 to-red-600 text-white py-8 px-6 rounded-2xl hover:shadow-2xl transition-all text-xl font-bold shadow-lg transform hover:scale-105">
+                        <div class="text-4xl mb-2">💸</div>
                         + Añadir Gasto
                     </button>
                     <button id="add-income-btn"
-                        class="bg-green-500 text-white py-6 px-4 rounded-lg hover:bg-green-600 transition text-lg font-semibold shadow-lg">
+                        class="bg-gradient-to-r from-green-500 to-green-600 text-white py-8 px-6 rounded-2xl hover:shadow-2xl transition-all text-xl font-bold shadow-lg transform hover:scale-105">
+                        <div class="text-4xl mb-2">💵</div>
                         + Añadir Ingreso
                     </button>
                 </div>
 
                 <!-- Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <p class="text-gray-600 text-sm mb-2">Gastos del Mes</p>
-                        <p id="total-expenses" class="text-2xl font-bold text-red-600">$0</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-red-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-gray-600 font-medium">Gastos del Mes</p>
+                            <span class="text-3xl">📉</span>
+                        </div>
+                        <p id="total-expenses" class="text-3xl font-bold text-red-600">$0</p>
                     </div>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <p class="text-gray-600 text-sm mb-2">Ingresos del Mes</p>
-                        <p id="total-income" class="text-2xl font-bold text-green-600">$0</p>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-green-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-gray-600 font-medium">Ingresos del Mes</p>
+                            <span class="text-3xl">📈</span>
+                        </div>
+                        <p id="total-income" class="text-3xl font-bold text-green-600">$0</p>
                     </div>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <p class="text-gray-600 text-sm mb-2">Balance</p>
-                        <p id="balance" class="text-2xl font-bold text-indigo-600">$0</p>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-gray-600 font-medium">Balance</p>
+                            <span class="text-3xl">💰</span>
+                        </div>
+                        <p id="balance" class="text-3xl font-bold text-blue-600">$0</p>
                     </div>
                 </div>
 
                 <!-- Chart and Recent Activity -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="font-semibold text-lg mb-4">Gastos por Categoría</h3>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                        <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                            <span>📊</span>
+                            Gastos por Categoría
+                        </h3>
                         <canvas id="expense-chart"></canvas>
                     </div>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="font-semibold text-lg mb-4">Actividad Reciente</h3>
-                        <div id="recent-activity" class="space-y-3"></div>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                        <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                            <span>🕐</span>
+                            Actividad Reciente
+                        </h3>
+                        <div id="recent-activity" class="space-y-3 max-h-96 overflow-y-auto"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Categories View -->
-            <div id="categories-view" class="view-content hidden">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <h2 class="text-2xl font-bold mb-4">Ver por Categoría</h2>
+            <div id="categories-view" class="view-content hidden animate-fadeIn">
+                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800 flex items-center gap-3">
+                        <span>📁</span>
+                        Ver por Categoría
+                    </h2>
 
                     <!-- Filters -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                            <select id="filter-category" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                            <select id="filter-category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                                 <option value="">Todas</option>
-                                <option value="casa">Casa</option>
-                                <option value="servicios">Servicios</option>
-                                <option value="elias">Elías</option>
-                                <option value="papas">Papás</option>
+                                <option value="casa">🏠 Casa</option>
+                                <option value="servicios">⚡ Servicios</option>
+                                <option value="elias">👤 Elías</option>
+                                <option value="papas">👨‍👩‍👦 Papás</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Año</label>
-                            <select id="filter-year" class="w-full px-3 py-2 border border-gray-300 rounded-md"></select>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                            <select id="filter-year" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"></select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Mes</label>
-                            <select id="filter-month" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mes</label>
+                            <select id="filter-month" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                                 <option value="">Todos</option>
                                 <option value="0">Enero</option>
                                 <option value="1">Febrero</option>
@@ -216,42 +276,45 @@
                     </div>
 
                     <!-- Category Summary -->
-                    <div class="mb-4">
-                        <h3 class="text-xl font-semibold mb-2">Resumen</h3>
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Resumen</h3>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="text-center p-4 bg-purple-50 rounded-lg">
-                                <p class="text-sm text-gray-600">Casa</p>
-                                <p id="cat-casa" class="text-xl font-bold text-purple-600">$0</p>
+                            <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-md card-hover">
+                                <p class="text-sm text-gray-600 mb-1">🏠 Casa</p>
+                                <p id="cat-casa" class="text-2xl font-bold text-purple-600">$0</p>
                             </div>
-                            <div class="text-center p-4 bg-blue-50 rounded-lg">
-                                <p class="text-sm text-gray-600">Servicios</p>
-                                <p id="cat-servicios" class="text-xl font-bold text-blue-600">$0</p>
+                            <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-md card-hover">
+                                <p class="text-sm text-gray-600 mb-1">⚡ Servicios</p>
+                                <p id="cat-servicios" class="text-2xl font-bold text-blue-600">$0</p>
                             </div>
-                            <div class="text-center p-4 bg-green-50 rounded-lg">
-                                <p class="text-sm text-gray-600">Elías</p>
-                                <p id="cat-elias" class="text-xl font-bold text-green-600">$0</p>
+                            <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-md card-hover">
+                                <p class="text-sm text-gray-600 mb-1">👤 Elías</p>
+                                <p id="cat-elias" class="text-2xl font-bold text-green-600">$0</p>
                             </div>
-                            <div class="text-center p-4 bg-orange-50 rounded-lg">
-                                <p class="text-sm text-gray-600">Papás</p>
-                                <p id="cat-papas" class="text-xl font-bold text-orange-600">$0</p>
+                            <div class="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-md card-hover">
+                                <p class="text-sm text-gray-600 mb-1">👨‍👩‍👦 Papás</p>
+                                <p id="cat-papas" class="text-2xl font-bold text-orange-600">$0</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Transactions List -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="font-semibold text-lg mb-4">Transacciones</h3>
-                    <div id="filtered-transactions" class="space-y-2"></div>
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="font-bold text-xl mb-4 text-gray-800">Transacciones</h3>
+                    <div id="filtered-transactions" class="space-y-3"></div>
                 </div>
             </div>
 
             <!-- Tasks View -->
-            <div id="tasks-view" class="view-content hidden">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Tareas y Pagos Pendientes</h2>
-                        <button id="add-task-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+            <div id="tasks-view" class="view-content hidden animate-fadeIn">
+                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                            <span>✓</span>
+                            Tareas y Pagos Pendientes
+                        </h2>
+                        <button id="add-task-btn" class="gradient-bg text-white px-6 py-3 rounded-lg hover:opacity-90 transition font-semibold shadow-lg">
                             + Nueva Tarea
                         </button>
                     </div>
@@ -260,13 +323,19 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Pending Tasks -->
                         <div>
-                            <h3 class="font-semibold text-lg mb-4 text-orange-600">Pendientes</h3>
+                            <h3 class="font-semibold text-xl mb-4 text-orange-600 flex items-center gap-2">
+                                <span>⏳</span>
+                                Pendientes
+                            </h3>
                             <div id="pending-tasks" class="space-y-3"></div>
                         </div>
 
                         <!-- Completed Tasks -->
                         <div>
-                            <h3 class="font-semibold text-lg mb-4 text-green-600">Completadas</h3>
+                            <h3 class="font-semibold text-xl mb-4 text-green-600 flex items-center gap-2">
+                                <span>✅</span>
+                                Completadas
+                            </h3>
                             <div id="completed-tasks" class="space-y-3"></div>
                         </div>
                     </div>
@@ -274,10 +343,13 @@
             </div>
 
             <!-- Balance View -->
-            <div id="balance-view" class="view-content hidden">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-2xl font-bold mb-4">Balance entre Miembros</h2>
-                    <p class="text-gray-600 mb-6">Quien le debe a quien basado en los gastos compartidos</p>
+            <div id="balance-view" class="view-content hidden animate-fadeIn">
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-800 flex items-center gap-3">
+                        <span>💵</span>
+                        Balance entre Miembros
+                    </h2>
+                    <p class="text-gray-600 mb-6">Quién le debe a quién basado en los gastos compartidos</p>
 
                     <div id="member-balance-detailed" class="space-y-4"></div>
                 </div>
@@ -287,11 +359,11 @@
 
     <!-- Transaction Modal -->
     <div id="transaction-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 id="modal-title" class="text-2xl font-bold">Añadir Transacción</h2>
-                    <button id="close-modal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                    <h2 id="modal-title" class="text-2xl font-bold text-gray-800">Añadir Transacción</h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
                 </div>
 
                 <form id="transaction-form" class="space-y-4">
@@ -300,12 +372,12 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
                         <div class="flex gap-4">
                             <button type="button" data-type="expense"
-                                class="type-btn flex-1 py-2 px-4 rounded-md border-2 border-red-500 text-red-500 hover:bg-red-50 transition">
-                                Gasto
+                                class="type-btn flex-1 py-3 px-4 rounded-lg border-2 border-red-500 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition">
+                                💸 Gasto
                             </button>
                             <button type="button" data-type="income"
-                                class="type-btn flex-1 py-2 px-4 rounded-md border-2 border-gray-300 text-gray-600 hover:bg-gray-50 transition">
-                                Ingreso
+                                class="type-btn flex-1 py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-600 font-semibold hover:bg-gray-50 transition">
+                                💵 Ingreso
                             </button>
                         </div>
                         <input type="hidden" id="transaction-type" value="expense">
@@ -315,26 +387,26 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
                         <input type="number" id="transaction-amount" step="0.01" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
                     <!-- Description -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
                         <input type="text" id="transaction-description" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
                     <!-- Category -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                         <select id="transaction-category" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                             <option value="">Seleccionar...</option>
-                            <option value="casa">Casa</option>
-                            <option value="servicios">Servicios</option>
-                            <option value="elias">Elías</option>
-                            <option value="papas">Papás</option>
+                            <option value="casa">🏠 Casa</option>
+                            <option value="servicios">⚡ Servicios</option>
+                            <option value="elias">👤 Elías</option>
+                            <option value="papas">👨‍👩‍👦 Papás</option>
                         </select>
                     </div>
 
@@ -342,14 +414,14 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
                         <input type="date" id="transaction-date" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
                     <!-- Paid By -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Pagado por</label>
                         <select id="transaction-paidby" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
@@ -358,10 +430,10 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Foto del Comprobante *</label>
                         <input type="file" id="transaction-receipt" accept="image/*" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                         <p class="text-xs text-gray-500 mt-1">Máximo 1MB</p>
-                        <div id="receipt-preview" class="mt-2 hidden">
-                            <img id="preview-image" class="max-h-40 rounded-md" alt="Preview">
+                        <div id="receipt-preview" class="mt-3 hidden">
+                            <img id="preview-image" class="max-h-48 rounded-lg shadow-md" alt="Preview">
                         </div>
                     </div>
 
@@ -369,20 +441,20 @@
                     <div>
                         <label class="flex items-center gap-2">
                             <input type="checkbox" id="transaction-shared"
-                                class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                class="w-5 h-5 text-green-600 rounded focus:ring-green-500">
                             <span class="text-sm font-medium text-gray-700">¿Es un gasto compartido?</span>
                         </label>
                     </div>
 
-                    <!-- Shared Options (Hidden by default) -->
-                    <div id="shared-options" class="hidden space-y-2">
-                        <p class="text-sm text-gray-600">Dividir entre:</p>
+                    <!-- Shared Options -->
+                    <div id="shared-options" class="hidden space-y-2 bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm font-medium text-gray-700">Dividir entre:</p>
                         <div id="shared-members"></div>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit"
-                        class="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition font-semibold">
+                        class="w-full gradient-bg text-white py-4 px-4 rounded-lg hover:opacity-90 transition font-bold text-lg shadow-lg">
                         Guardar Transacción
                     </button>
                 </form>
@@ -392,24 +464,24 @@
 
     <!-- Task Modal -->
     <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-fadeIn">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Nueva Tarea</h2>
-                    <button id="close-task-modal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                    <h2 class="text-2xl font-bold text-gray-800">Nueva Tarea</h2>
+                    <button id="close-task-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
                 </div>
 
                 <form id="task-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
                         <input type="text" id="task-title" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Asignar a</label>
                         <select id="task-assigned" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
@@ -417,11 +489,11 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha límite</label>
                         <input type="date" id="task-duedate" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
                     <button type="submit"
-                        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
+                        class="w-full gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition font-bold shadow-lg">
                         Crear Tarea
                     </button>
                 </form>
@@ -431,9 +503,9 @@
 
     <!-- Loading Spinner -->
     <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p class="mt-4 text-gray-700">Cargando...</p>
+        <div class="bg-white rounded-2xl p-8 shadow-2xl">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto"></div>
+            <p class="mt-4 text-gray-700 font-semibold">Cargando...</p>
         </div>
     </div>
 

@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add .)"
+      "Bash(git add .)",
+      "Bash(git pull origin main --allow-unrelated-histories)",
+      "Bash(firebase deploy --only hosting)",
+      "Bash(git commit -m \"UI mejorada: colores verdes, navegación arreglada, diseño moderno\n\nMejoras implementadas:\n- Esquema de colores verde (gradientes)\n- Navegación funcional entre tabs\n- Animaciones y transiciones suaves\n- Cards con hover effects\n- Iconos emoji en todas las secciones\n- Botones con sombras y efectos\n- Formularios con mejor UX\n- Estados activos visuales\n- Diseño responsive mejorado\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")"
     ],
     "deny": [],
     "ask": []
