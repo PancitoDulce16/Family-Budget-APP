@@ -1,5 +1,5 @@
 // Receipt Gallery Module
-export function createReceiptGallery(transactions, customCategories) {
+export function createReceiptGallery(transactions, customCategories = []) {
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
   widget.innerHTML = `
@@ -53,7 +53,7 @@ export function createReceiptGallery(transactions, customCategories) {
   return widget;
 }
 
-function openLightbox(transactions, startIndex, customCategories) {
+function openLightbox(transactions, startIndex, customCategories = []) {
   let currentIndex = startIndex;
 
   const lightbox = document.createElement('div');

@@ -205,8 +205,13 @@ service cloud.firestore {
  
     // Family Groups
     // Any authenticated user can create/join groups.
+    // A user can write to a group if they are creating it, or if they are adding themselves to the members list.
+    // A user can read/update a group if they are already a member.
     match /familyGroups/{groupId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth.uid in resource.data.members;
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid in resource.data.members || 
+                       request.auth.uid in request.resource.data.members;
     }
  
     // Transactions

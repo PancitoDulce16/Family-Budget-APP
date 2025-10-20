@@ -15,6 +15,7 @@ import {
   getDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { showLoading, showNotification } from './ui.js';
 
 // UI Elements
 const authContainer = document.getElementById('auth-container');
@@ -27,7 +28,6 @@ const emailLoginForm = document.getElementById('email-login-form');
 const emailRegisterForm = document.getElementById('email-register-form');
 const googleLoginBtn = document.getElementById('google-login-btn');
 const logoutBtn = document.getElementById('logout-btn');
-const loading = document.getElementById('loading');
 
 // Toggle between login and register
 showRegisterBtn?.addEventListener('click', () => {
