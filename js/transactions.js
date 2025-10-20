@@ -147,7 +147,7 @@ export function getCurrentEditingTransaction() {
 export function clearCurrentEditingTransaction() {
   currentEditingTransaction = null;
   document.getElementById('modal-title').textContent = 'Añadir Transacción';
-  document.getElementById('transaction-receipt').setAttribute('required', 'required');
+  document.getElementById('transaction-receipt').removeAttribute('required');
 }
 
 // Create action buttons for transactions
