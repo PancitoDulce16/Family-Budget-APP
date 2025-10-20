@@ -31,13 +31,15 @@ function createDarkModeToggle() {
 
   // Insert before the end of navbar
   const navContent = navbar.querySelector('.container');
-  if (navContent) {
-    navContent.appendChild(toggleContainer);
-  }
+  const toggleBtn = toggleContainer.querySelector('#dark-mode-toggle');
 
-  // Add event listener
-  const toggleBtn = document.getElementById('dark-mode-toggle');
-  toggleBtn.addEventListener('click', toggleDarkMode);
+  if (navContent) {
+    // Add event listener before appending to the DOM
+    toggleBtn.addEventListener('click', toggleDarkMode);
+    navContent.appendChild(toggleContainer);
+  } else {
+    console.error('Could not find .container in navbar to add dark mode toggle.');
+  }
 }
 
 export function toggleDarkMode() {
