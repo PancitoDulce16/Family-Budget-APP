@@ -65,8 +65,8 @@ function displayGoals(goals, totalBalance, familyGroupId) {
 }
 
 function openGoalModal(familyGroupId) {
-  const goalName = prompt('Nombre de la meta (ej: Vacaciones 2026):');
-  if (!goalName) return;
+  const name = prompt('Nombre de la meta (ej: Vacaciones 2026):');
+  if (!name) return;
   const emoji = prompt('Emoji para la meta (ej: 🏖️):');
   if (!emoji) return;
   const targetAmount = parseFloat(prompt('Monto objetivo (ej: 5000):'));
@@ -75,7 +75,7 @@ function openGoalModal(familyGroupId) {
     return;
   }
 
-  saveGoal(familyGroupId, { name: goalName, emoji, targetAmount });
+  saveGoal(familyGroupId, { name, emoji, targetAmount });
 }
 
 async function saveGoal(familyGroupId, goalData) {
@@ -122,4 +122,3 @@ async function saveGoal(familyGroupId, goalData) {
      calculateBalance();
    });
  }
-
