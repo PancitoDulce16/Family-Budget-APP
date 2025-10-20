@@ -1,5 +1,8 @@
 // Export Module - Excel and PDF
 import { showLoading, showNotification } from './ui.js';
+import { formatCurrency } from './utils.js';
+
+let familyGroupCurrency = 'USD';
 
 // Export to Excel using SheetJS
 export async function exportToExcel(transactions, familyGroupName, customCategories) {
@@ -64,6 +67,12 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals,
     showLoading(true);
 
     // Load jsPDF library dynamically
+    // Get currency from app.js or a global state
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) {
+        familyGroupCurrency = appContainer.dataset.currency || 'USD';
+    }
+
     if (!window.jspdf) {
       await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
     }
@@ -91,7 +100,7 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals,
     doc.setFontSize(11);
     customCategories.forEach(cat => {
       const total = categoryTotals[cat.id] || 0;
-      doc.text(`${cat.emoji} ${cat.name}: $${total.toFixed(2)}`, 20, yPosition);
+      doc.text(`${cat.emoji} ${cat.name}: ${formatCurrency(total, familyGroupCurrency)}`, 20, yPosition);
       yPosition += 7;
     });
 
@@ -99,7 +108,7 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals,
     const totalExpenses = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
     doc.setFontSize(12);
     doc.setTextColor(220, 38, 38); // Red for total
-    doc.text(`Total Gastos: $${totalExpenses.toFixed(2)}`, 20, yPosition + 5);
+    doc.text(`Total Gastos: ${formatCurrency(totalExpenses, familyGroupCurrency)}`, 20, yPosition + 5);
 
     // Transactions table
     yPosition += 18;
@@ -140,7 +149,7 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals,
       const type = t.type === 'expense' ? 'Gasto' : 'Ingreso';
       const category = getCategoryDetails(t.category, customCategories).name;
       const description = t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description;
-      const amount = `$${t.amount.toFixed(2)}`;
+      const amount = formatCurrency(t.amount, familyGroupCurrency);
 
       doc.text(date, 18, yPosition);
       doc.text(type, 45, yPosition);

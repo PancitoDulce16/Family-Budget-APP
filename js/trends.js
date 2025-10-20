@@ -1,4 +1,7 @@
 // Trends and Analytics Module
+import { formatCurrency } from './utils.js';
+let familyGroupCurrency = 'USD';
+
 export function createTrendsChart(transactions) {
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
@@ -31,6 +34,12 @@ export function createTrendsChart(transactions) {
 
   let currentChart = null;
   let currentPeriod = 6;
+
+  // Get currency from app.js or a global state
+  const appContainer = document.getElementById('app-container');
+  if (appContainer) {
+      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+  }
 
   // Period button handlers
   periodBtns.forEach(btn => {
@@ -121,7 +130,7 @@ export function createTrendsChart(transactions) {
                 if (label) {
                   label += ': ';
                 }
-                label += '$' + context.parsed.y.toFixed(2);
+                label += formatCurrency(context.parsed.y, familyGroupCurrency);
                 return label;
               }
             }
@@ -132,7 +141,7 @@ export function createTrendsChart(transactions) {
             beginAtZero: true,
             ticks: {
               callback: function(value) {
-                return '$' + value.toFixed(0);
+                return formatCurrency(value, familyGroupCurrency, true).split('.')[0]; // Symbol + integer part
               },
               font: {
                 size: 12
@@ -182,37 +191,37 @@ export function createTrendsChart(transactions) {
     insightsContainer.innerHTML = `
       <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border-2 border-purple-200">
         <div class="text-purple-600 text-sm font-semibold mb-1">Promedio Mensual</div>
-        <div class="text-2xl font-bold text-purple-800">$${avgExpenses.toFixed(2)}</div>
+        <div class="text-2xl font-bold text-purple-800">${formatCurrency(avgExpenses, familyGroupCurrency)}</div>
         <div class="text-xs text-purple-600 mt-1">en gastos</div>
       </div>
 
       <div class="bg-gradient-to-br from-${balance >= 0 ? 'green' : 'red'}-50 to-${balance >= 0 ? 'green' : 'red'}-100 rounded-xl p-4 border-2 border-${balance >= 0 ? 'green' : 'red'}-200">
         <div class="text-${balance >= 0 ? 'green' : 'red'}-600 text-sm font-semibold mb-1">Balance Total</div>
-        <div class="text-2xl font-bold text-${balance >= 0 ? 'green' : 'red'}-800">${balance >= 0 ? '+' : ''}$${balance.toFixed(2)}</div>
+        <div class="text-2xl font-bold text-${balance >= 0 ? 'green' : 'red'}-800">${balance >= 0 ? '+' : ''}${formatCurrency(balance, familyGroupCurrency)}</div>
         <div class="text-xs text-${balance >= 0 ? 'green' : 'red'}-600 mt-1">${balance >= 0 ? 'Superávit' : 'Déficit'}</div>
       </div>
 
       <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-2 border-blue-200">
         <div class="text-blue-600 text-sm font-semibold mb-1">Tendencia</div>
-        <div class="text-2xl font-bold text-blue-800">${trend === 'subiendo' ? '📈' : '📉'} ${trendPercentage}%</div>
+        <div class="text-2xl font-bold text-blue-800">${trend === 'subiendo' ? '📈' : '📉'} ${trendPercentage !== 'NaN' ? trendPercentage + '%' : 'N/A'}</div>
         <div class="text-xs text-blue-600 mt-1">Gastos ${trend}</div>
       </div>
 
       <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border-2 border-orange-200">
         <div class="text-orange-600 text-sm font-semibold mb-1">Mes con Mayor Gasto</div>
         <div class="text-lg font-bold text-orange-800">${maxExpenseMonth}</div>
-        <div class="text-xs text-orange-600 mt-1">$${Math.max(...data.expenses).toFixed(2)}</div>
+        <div class="text-xs text-orange-600 mt-1">${formatCurrency(Math.max(...data.expenses), familyGroupCurrency)}</div>
       </div>
 
       <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-4 border-2 border-teal-200">
         <div class="text-teal-600 text-sm font-semibold mb-1">Mes con Menor Gasto</div>
         <div class="text-lg font-bold text-teal-800">${minExpenseMonth}</div>
-        <div class="text-xs text-teal-600 mt-1">$${Math.min(...data.expenses).toFixed(2)}</div>
+        <div class="text-xs text-teal-600 mt-1">${formatCurrency(Math.min(...data.expenses), familyGroupCurrency)}</div>
       </div>
 
       <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-4 border-2 border-pink-200">
         <div class="text-pink-600 text-sm font-semibold mb-1">Proyección Próximo Mes</div>
-        <div class="text-2xl font-bold text-pink-800">$${recentExpenses.toFixed(2)}</div>
+        <div class="text-2xl font-bold text-pink-800">${formatCurrency(recentExpenses, familyGroupCurrency)}</div>
         <div class="text-xs text-pink-600 mt-1">basado en últimos 3 meses</div>
       </div>
     `;
@@ -302,14 +311,14 @@ export function createComparisonWidget(transactions) {
       </div>
       <div class="bg-red-50 rounded-xl p-4 border-2 border-red-200">
         <div class="text-red-600 text-sm font-semibold mb-2">💸 Gastos</div>
-        <div class="text-3xl font-bold text-red-700">$${currentMonthData.expenses.toFixed(2)}</div>
+        <div class="text-3xl font-bold text-red-700">${formatCurrency(currentMonthData.expenses, familyGroupCurrency)}</div>
         <div class="text-sm mt-2 ${expenseChange > 0 ? 'text-red-600' : 'text-green-600'}">
           ${expenseChange > 0 ? '↑' : '↓'} ${Math.abs(expenseChangePercent)}% vs mes anterior
         </div>
       </div>
       <div class="bg-green-50 rounded-xl p-4 border-2 border-green-200">
         <div class="text-green-600 text-sm font-semibold mb-2">💵 Ingresos</div>
-        <div class="text-3xl font-bold text-green-700">$${currentMonthData.income.toFixed(2)}</div>
+        <div class="text-3xl font-bold text-green-700">${formatCurrency(currentMonthData.income, familyGroupCurrency)}</div>
         <div class="text-sm mt-2 ${incomeChange > 0 ? 'text-green-600' : 'text-red-600'}">
           ${incomeChange > 0 ? '↑' : '↓'} ${Math.abs(incomeChangePercent)}% vs mes anterior
         </div>
@@ -323,11 +332,11 @@ export function createComparisonWidget(transactions) {
       </div>
       <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
         <div class="text-gray-600 text-sm font-semibold mb-2">💸 Gastos</div>
-        <div class="text-3xl font-bold text-gray-700">$${previousMonthData.expenses.toFixed(2)}</div>
+        <div class="text-3xl font-bold text-gray-700">${formatCurrency(previousMonthData.expenses, familyGroupCurrency)}</div>
       </div>
       <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
         <div class="text-gray-600 text-sm font-semibold mb-2">💵 Ingresos</div>
-        <div class="text-3xl font-bold text-gray-700">$${previousMonthData.income.toFixed(2)}</div>
+        <div class="text-3xl font-bold text-gray-700">${formatCurrency(previousMonthData.income, familyGroupCurrency)}</div>
       </div>
     </div>
   `;

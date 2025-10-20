@@ -8,13 +8,20 @@ import {
   onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { showLoading, showNotification } from './ui.js';
+import { formatCurrency } from './utils.js';
 
 let budgetsListener = null;
 let currentBudgets = {};
 let customCategories = [];
+let familyGroupCurrency = 'USD';
 
 export function initializeBudgets(familyGroupId, categories) {
   loadBudgets(familyGroupId, categories);
+  // Get currency from app.js or a global state
+  const appContainer = document.getElementById('app-container');
+  if (appContainer) {
+      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+  }
 }
 
 function loadBudgets(familyGroupId) {
@@ -96,7 +103,7 @@ function updateBudgetBars(container, categoryTotals) {
         <div class="flex justify-between items-center mb-2">
           <span class="font-medium text-gray-700">${cat.name}</span>
           <span class="text-sm font-semibold ${textColor}">
-            $${spent.toFixed(2)} / $${budget.toFixed(2)}
+            ${formatCurrency(spent, familyGroupCurrency)} / ${formatCurrency(budget, familyGroupCurrency)}
           </span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">

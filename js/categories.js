@@ -1,17 +1,23 @@
 // Categories Module - Filtered transactions view
 import { db } from './firebase-config.js';
 import { showReceiptModal, showNotification } from './ui.js';
+import { formatCurrency } from './utils.js';
 import { collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 let familyMembers = [];
 let userFamilyGroup = null;
 let allTransactions = [];
 let customCategories = [];
+let familyGroupCurrency = 'USD';
 
 export function initializeCategories(familyGroupId, members, categories) {
   userFamilyGroup = familyGroupId;
   familyMembers = members;
   customCategories = categories;
+  const appContainer = document.getElementById('app-container');
+  if (appContainer) {
+      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+  }
 
   setupCategoryFilters();
   populateYearFilter();
@@ -130,7 +136,7 @@ function displayFilteredTransactions(transactions) {
           <h4 class="font-semibold">${t.description}</h4>
           <p class="text-sm opacity-75">${categoryDetails.displayName}</p>
         </div>
-        <p class="text-xl font-bold text-red-600">-$${t.amount.toFixed(2)}</p>
+        <p class="text-xl font-bold text-red-600">-${formatCurrency(t.amount, familyGroupCurrency)}</p>
       </div>
       <div class="flex justify-between items-center text-sm opacity-75">
         <span>${memberName}</span>
@@ -155,7 +161,7 @@ function displayFilteredTransactions(transactions) {
   totalDiv.innerHTML = `
     <div class="flex justify-between items-center">
       <span class="text-lg font-semibold">Total:</span>
-      <span class="text-2xl font-bold text-red-600">$${total.toFixed(2)}</span>
+      <span class="text-2xl font-bold text-red-600">${formatCurrency(total, familyGroupCurrency)}</span>
     </div>
   `;
   container.appendChild(totalDiv);
@@ -178,7 +184,7 @@ function updateCategorySummary(transactions) {
     card.style.borderColor = cat.color;
     card.innerHTML = `
       <p class="text-sm text-gray-600 mb-1">${cat.emoji} ${cat.name}</p>
-      <p class="text-2xl font-bold" style="color: ${cat.color};">$${total.toFixed(2)}</p>
+      <p class="text-2xl font-bold" style="color: ${cat.color};">${formatCurrency(total, familyGroupCurrency)}</p>
     `;
     summaryGrid.appendChild(card);
   });

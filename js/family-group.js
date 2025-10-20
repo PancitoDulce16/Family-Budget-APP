@@ -25,7 +25,7 @@ function generateInviteCode() {
 }
 
 // Create a new family group
-export async function createFamilyGroup(groupName) {
+export async function createFamilyGroup(groupName, currency) {
   const user = getCurrentUser();
   if (!user) {
     throw new Error('Usuario no autenticado');
@@ -41,6 +41,7 @@ export async function createFamilyGroup(groupName) {
     // Create family group
     await setDoc(groupRef, {
       name: groupName,
+      currency: currency,
       createdBy: user.uid,
       members: [user.uid],
       inviteCode: inviteCode,
@@ -154,6 +155,13 @@ export function showFamilyGroupSetup() {
               <input type="text" id="group-name" required placeholder="Ej: Familia González"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Moneda del Grupo</label>
+              <select id="group-currency" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="CRC">Colón Costarricense (₡)</option>
+                <option value="USD" selected>Dólar Estadounidense ($)</option>
+              </select>
+            </div>
             <div class="flex gap-2">
               <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
                 Crear
@@ -240,9 +248,10 @@ export function showFamilyGroupSetup() {
   createForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const groupName = document.getElementById('group-name').value;
+    const currency = document.getElementById('group-currency').value;
 
     try {
-      const result = await createFamilyGroup(groupName);
+      const result = await createFamilyGroup(groupName, currency);
       createGroupForm.classList.add('hidden');
       groupCreatedInfo.classList.remove('hidden');
       document.getElementById('display-invite-code').textContent = result.inviteCode;

@@ -1,4 +1,7 @@
 // Receipt Gallery Module
+import { formatCurrency } from './utils.js';
+let familyGroupCurrency = 'USD';
+
 export function createReceiptGallery(transactions, customCategories) {
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
@@ -18,6 +21,12 @@ export function createReceiptGallery(transactions, customCategories) {
   const grid = widget.querySelector('#receipt-grid');
   const downloadBtn = widget.querySelector('#download-all-receipts');
 
+  // Get currency from app.js or a global state
+  const appContainer = document.getElementById('app-container');
+  if (appContainer) {
+      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+  }
+
   // Filter transactions with receipts
   const transactionsWithReceipts = transactions.filter(t => t.receiptBase64);
 
@@ -33,7 +42,7 @@ export function createReceiptGallery(transactions, customCategories) {
         <img src="${transaction.receiptBase64}" alt="${transaction.description}" class="w-full h-48 object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition flex flex-col justify-end p-3">
           <p class="text-white font-semibold text-sm truncate">${transaction.description}</p>
-          <p class="text-white text-xs">$${transaction.amount.toFixed(2)}</p>
+          <p class="text-white text-xs">${transaction.type === 'expense' ? '-' : ''}${formatCurrency(transaction.amount, familyGroupCurrency)}</p>
           <p class="text-white text-xs opacity-75">${transaction.date?.toDate ? transaction.date.toDate().toLocaleDateString('es-ES') : new Date(transaction.date).toLocaleDateString('es-ES')}</p>
         </div>
       `;
@@ -133,7 +142,7 @@ function openLightbox(transactions, startIndex, customCategories) {
 
     img.src = transaction.receiptBase64;
     description.textContent = transaction.description;
-    amount.textContent = `${transaction.type === 'expense' ? '-' : '+'}$${transaction.amount.toFixed(2)}`;
+    amount.textContent = `${transaction.type === 'expense' ? '-' : ''}${formatCurrency(transaction.amount, familyGroupCurrency)}`;
     category.textContent = getCategoryDetails(transaction.category, customCategories).displayName;
     date.textContent = transaction.date?.toDate
       ? transaction.date.toDate().toLocaleDateString('es-ES', { dateStyle: 'long' })

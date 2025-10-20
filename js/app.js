@@ -23,6 +23,7 @@ import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
 import { initializeGoals } from './goals.js';
 import { showLoading, showNotification, showReceiptModal, showConfirmation } from './ui.js';
+import { formatCurrency } from './utils.js';
 import {
   collection,
   doc,
@@ -42,6 +43,7 @@ import {
 // Global variables
 let currentUser = null;
 let userFamilyGroup = null;
+let familyGroupCurrency = 'USD'; // Default currency
 let familyMembers = [];
 let currentTransactions = [];
 let customCategories = [];
@@ -153,6 +155,12 @@ async function loadUserData() {
     if (userData.familyGroupId) {
       userFamilyGroup = userData.familyGroupId;
       await loadFamilyMembers();
+      // Load currency from family group
+      const groupDoc = await getDoc(doc(db, 'familyGroups', userFamilyGroup));
+      if (groupDoc.exists()) {
+        familyGroupCurrency = groupDoc.data().currency || 'USD';
+        document.getElementById('app-container').dataset.currency = familyGroupCurrency; // Store globally for other modules
+      }
       populatePaidByDropdown();
     }
   }
@@ -544,9 +552,9 @@ function updateDashboardStats() {
 
   const balance = totalIncome - totalExpenses;
 
-  document.getElementById('total-expenses').textContent = `$${totalExpenses.toFixed(2)}`;
-  document.getElementById('total-income').textContent = `$${totalIncome.toFixed(2)}`;
-  document.getElementById('balance').textContent = `$${balance.toFixed(2)}`;
+  document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses, familyGroupCurrency);
+  document.getElementById('total-income').textContent = formatCurrency(totalIncome, familyGroupCurrency);
+  document.getElementById('balance').textContent = formatCurrency(balance, familyGroupCurrency);
 
   const balanceElement = document.getElementById('balance');
   // Update goals widget with the new total balance
@@ -592,7 +600,7 @@ function updateRecentActivity() {
           <p class="text-xs text-gray-500">${memberName} - ${transaction.category}</p>
         </div>
         <p class="font-semibold ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}">
-          ${transaction.type === 'expense' ? '-' : '+'}$${transaction.amount.toFixed(2)}
+          ${transaction.type === 'expense' ? '-' : '+'}${formatCurrency(transaction.amount, familyGroupCurrency)}
         </p>
       </div>
     `;
@@ -669,7 +677,7 @@ function updateExpenseChart() {
             label: function(context) {
               const label = context.label || '';
               const value = context.parsed || 0;
-              return `${label}: $${value.toFixed(2)}`;
+              return `${label}: ${formatCurrency(value, familyGroupCurrency)}`;
             }
           }
         }

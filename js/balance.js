@@ -1,9 +1,12 @@
 // Balance Module - Calculate who owes whom
 import { db } from './firebase-config.js';
+import { formatCurrency } from './utils.js';
 import { collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 let familyMembers = [];
 let userFamilyGroup = null;
+let familyGroupCurrency = 'USD';
+
 
 export function initializeBalance(familyGroupId, members) {
   userFamilyGroup = familyGroupId;
@@ -12,6 +15,12 @@ export function initializeBalance(familyGroupId, members) {
 
 export async function calculateBalance() {
   if (!userFamilyGroup) return;
+
+  // Get currency from app.js or a global state
+  const appContainer = document.getElementById('app-container');
+  if (appContainer) {
+      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+  }
 
   try {
     // Get all shared transactions
@@ -141,7 +150,7 @@ function displayBalance(balances) {
       <p class="text-sm">
         <span class="font-semibold">${suggestion.from}</span>
         le debe
-        <span class="font-bold text-red-600">$${suggestion.amount.toFixed(2)}</span>
+        <span class="font-bold text-red-600">${formatCurrency(suggestion.amount, familyGroupCurrency)}</span>
         a
         <span class="font-semibold">${suggestion.to}</span>
       </p>
@@ -176,15 +185,15 @@ function displayDetailedBalance(balances) {
       <div class="grid grid-cols-3 gap-2 text-sm">
         <div class="text-center p-2 bg-green-50 rounded">
           <p class="text-xs text-gray-600">Pagó</p>
-          <p class="font-bold text-green-600">$${member.paid.toFixed(2)}</p>
+          <p class="font-bold text-green-600">${formatCurrency(member.paid, familyGroupCurrency)}</p>
         </div>
         <div class="text-center p-2 bg-red-50 rounded">
           <p class="text-xs text-gray-600">Debe</p>
-          <p class="font-bold text-red-600">$${member.owes.toFixed(2)}</p>
+          <p class="font-bold text-red-600">${formatCurrency(member.owes, familyGroupCurrency)}</p>
         </div>
         <div class="text-center p-2 bg-gray-50 rounded">
           <p class="text-xs text-gray-600">Balance</p>
-          <p class="font-bold ${statusColor}">$${Math.abs(member.balance).toFixed(2)}</p>
+          <p class="font-bold ${statusColor}">${formatCurrency(Math.abs(member.balance), familyGroupCurrency)}</p>
         </div>
       </div>
     `;

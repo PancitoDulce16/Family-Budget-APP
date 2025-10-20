@@ -1,5 +1,6 @@
 // Savings Goals Module
 import { db } from './firebase-config.js';
+import { formatCurrency } from './utils.js';
 import { showNotification } from './ui.js';
 import {
   collection,
@@ -11,9 +12,16 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 let goalsListener = null;
+let familyGroupCurrency = 'USD';
 
 export function initializeGoals(familyGroupId, totalBalance) {
   if (!familyGroupId) return;
+
+  // Get currency from app.js or a global state
+  const appContainer = document.getElementById('app-container');
+  if (appContainer) {
+      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+  }
 
   if (goalsListener) goalsListener(); // Unsubscribe from previous listener
 
@@ -58,7 +66,7 @@ function displayGoals(goals, totalBalance, familyGroupId) {
       <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
         <div class="bg-green-500 h-4 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
       </div>
-      <p class="text-xs text-gray-500 text-right mt-1">$${savedAmount.toFixed(2)} de $${goal.targetAmount.toFixed(2)}</p>
+      <p class="text-xs text-gray-500 text-right mt-1">${formatCurrency(savedAmount, familyGroupCurrency)} de ${formatCurrency(goal.targetAmount, familyGroupCurrency)}</p>
     `;
     container.appendChild(goalEl);
   });
