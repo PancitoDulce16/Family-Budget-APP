@@ -34,8 +34,7 @@ import {
   orderBy,
   serverTimestamp,
   writeBatch,
-  getCountFromServer,
-  onSnapshot
+  getCountFromServer
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // Global variables
@@ -174,7 +173,7 @@ function addAnalyticsWidgets() {
   dashboardView.appendChild(analyticsContainer);
 }
 
-// Update analytics widgets with transaction data
+// Load and display analytics widgets that require all historical data
 async function updateAnalyticsWidgets() {
   const container = document.getElementById('analytics-widgets-container');
   if (!container) return;
@@ -182,27 +181,27 @@ async function updateAnalyticsWidgets() {
   // Clear existing widgets
   container.innerHTML = '';
 
-  // Get family group name
-  const familyGroupName = userFamilyGroup || 'Mi Familia';
+  // Fetch all transactions for analytics
+  const allTransactionsQuery = query(
+    collection(db, 'transactions'),
+    where('familyGroupId', '==', userFamilyGroup),
+    orderBy('date', 'desc')
+  );
+  const snapshot = await getDocs(allTransactionsQuery);
+  const allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-  // Calculate category totals
+  // Calculate category totals from all transactions
   const categoryTotals = {};
   customCategories.forEach(cat => categoryTotals[cat.id] = 0);
-  currentTransactions.filter(t => t.type === 'expense').forEach(t => {
+  allTransactions.filter(t => t.type === 'expense').forEach(t => {
     if (categoryTotals.hasOwnProperty(t.category)) {
       categoryTotals[t.category] += t.amount;
     }
   });
 
   // Add export widget
-  const exportWidget = createExportWidget(currentTransactions, familyGroupName, categoryTotals, customCategories);
+  const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories);
   container.appendChild(exportWidget);
-
-  // Add trends chart (if we have transactions)
-  if (currentTransactions.length > 0) {
-    // Load all transactions for trends (not just current month)
-    loadAllTransactionsForTrends();
-  }
 
   // Add comparison widget
   const comparisonWidget = createComparisonWidget(allTransactions);
@@ -215,11 +214,6 @@ async function updateAnalyticsWidgets() {
   // Add receipt gallery
   const galleryWidget = createReceiptGallery(allTransactions, customCategories);
   container.appendChild(galleryWidget);
-}
-
-// This function is now redundant as its logic is merged into updateAnalyticsWidgets
-async function loadAllTransactionsForTrends() {
-  // The logic has been moved to updateAnalyticsWidgets to avoid multiple queries.
 }
 
 // Apply search filters

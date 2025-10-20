@@ -89,13 +89,10 @@ async function saveGoal(familyGroupId, goalData) {
   }
 }
 
-```
 
-### 2. Refactorizar `js/app.js` para Mejorar el Rendimiento
 
-He notado que la función `updateAnalyticsWidgets` se llama dentro del listener en tiempo real (`onSnapshot`), lo que causa una recarga ineficiente de todos los datos históricos con cada pequeño cambio. Voy a corregir esto para que los análisis históricos se carguen una sola vez.
 
-```diff
+```fdif
 --- a/c/Users/Noelia/Documents/GitHub/Family-Budget-APP/js/app.js
 +++ b/c/Users/Noelia/Documents/GitHub/Family-Budget-APP/js/app.js
 @@ -80,9 +80,6 @@
@@ -126,11 +123,3 @@ He notado que la función `updateAnalyticsWidgets` se llama dentro del listener 
    });
  }
 
-```
-
-Con estos cambios, hemos creado el archivo `js/goals.js` que faltaba y hemos optimizado la carga de datos en `js/app.js`. Tu nueva funcionalidad de "Metas de Ahorro" ahora debería aparecer y funcionar correctamente, y la aplicación será más eficiente. ¡Un gran paso adelante!
-
-<!--
-[PROMPT_SUGGESTION]Ayúdame a crear un modal más avanzado para gestionar las metas de ahorro.[/PROMPT_SUGGESTION]
-[PROMPT_SUGGESTION]Explícame cómo puedo hacer que las animaciones de la UI sean más fluidas.[/PROMPT_SUGGESTION]
--->
