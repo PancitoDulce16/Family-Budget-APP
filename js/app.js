@@ -64,7 +64,6 @@ const receiptPreviewContainer = document.getElementById('receipt-preview');
 
 // Initialize app
 window.initializeApp = async (user) => {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Delay for debugging race condition
   currentUser = user;
   await loadUserData();
 
