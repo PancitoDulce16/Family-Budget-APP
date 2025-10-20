@@ -431,6 +431,7 @@ async function handleTransactionSubmit(e) {
     const date = new Date(document.getElementById('transaction-date').value);
     const paidBy = document.getElementById('transaction-paidby').value;
     const receiptFile = receiptInput.files[0];
+    const currency = document.getElementById('transaction-currency').value;
     const isShared = sharedCheckbox.checked;
 
     // Check if editing
@@ -454,6 +455,7 @@ async function handleTransactionSubmit(e) {
       description,
       category,
       date: date,
+      currency: currency,
       paidBy,
       receiptBase64: receiptBase64,
       isShared,
@@ -600,7 +602,7 @@ function updateRecentActivity() {
           <p class="text-xs text-gray-500">${memberName} - ${transaction.category}</p>
         </div>
         <p class="font-semibold ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}">
-          ${transaction.type === 'expense' ? '-' : '+'}${formatCurrency(transaction.amount, familyGroupCurrency)}
+          ${transaction.type === 'expense' ? '-' : '+'}${formatCurrency(transaction.amount, transaction.currency || familyGroupCurrency)}
         </p>
       </div>
     `;

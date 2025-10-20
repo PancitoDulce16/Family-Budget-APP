@@ -136,7 +136,7 @@ function displayFilteredTransactions(transactions) {
           <h4 class="font-semibold">${t.description}</h4>
           <p class="text-sm opacity-75">${categoryDetails.displayName}</p>
         </div>
-        <p class="text-xl font-bold text-red-600">-${formatCurrency(t.amount, familyGroupCurrency)}</p>
+        <p class="text-xl font-bold text-red-600">-${formatCurrency(t.amount, t.currency || familyGroupCurrency)}</p>
       </div>
       <div class="flex justify-between items-center text-sm opacity-75">
         <span>${memberName}</span>

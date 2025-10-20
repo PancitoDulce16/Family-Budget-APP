@@ -73,6 +73,7 @@ export function openEditModal(transaction, familyMembers) {
   document.getElementById('transaction-amount').value = transaction.amount;
   document.getElementById('transaction-description').value = transaction.description;
   document.getElementById('transaction-category').value = transaction.category;
+  document.getElementById('transaction-currency').value = transaction.currency || 'USD'; // Default to USD if not set
 
   // Format date for input
   const date = transaction.date?.toDate ? transaction.date.toDate() : new Date(transaction.date);
