@@ -22,7 +22,7 @@ function createDarkModeToggle() {
   if (!navbar) return;
 
   const toggleContainer = document.createElement('div');
-  toggleContainer.className = 'ml-auto';
+  toggleContainer.className = 'flex items-center'; // Use flex to align with other items
   toggleContainer.innerHTML = `
     <button id="dark-mode-toggle" class="p-2 rounded-lg hover:bg-white/20 transition flex items-center gap-2" title="Cambiar tema">
       <span id="dark-mode-icon" class="text-2xl">${isDarkMode ? '☀️' : '🌙'}</span>
@@ -30,13 +30,13 @@ function createDarkModeToggle() {
   `;
 
   // Insert before the end of navbar
-  const navContent = navbar.querySelector('.container');
+  const navContent = navbar.querySelector('.flex.justify-between.items-center');
   const toggleBtn = toggleContainer.querySelector('#dark-mode-toggle');
 
   if (navContent) {
     // Add event listener before appending to the DOM
     toggleBtn.addEventListener('click', toggleDarkMode);
-    navContent.appendChild(toggleContainer);
+    navContent.insertBefore(toggleContainer, navContent.children[1]); // Insert before user info
   } else {
     console.error('Could not find .container in navbar to add dark mode toggle.');
   }
