@@ -523,10 +523,11 @@ function updateDashboardStats() {
   document.getElementById('total-income').textContent = `$${totalIncome.toFixed(2)}`;
   document.getElementById('balance').textContent = `$${balance.toFixed(2)}`;
 
-  // Initialize or update goals with the new balance
-  initializeGoals(userFamilyGroup, balance);
-
   const balanceElement = document.getElementById('balance');
+  // Update goals widget with the new total balance
+  const totalBalance = parseFloat(balanceElement.textContent.replace('$', ''));
+  initializeGoals(userFamilyGroup, totalBalance);
+
   if (balance >= 0) {
     balanceElement.classList.remove('text-red-600');
     balanceElement.classList.add('text-green-600');

@@ -64,18 +64,52 @@ function displayGoals(goals, totalBalance, familyGroupId) {
   });
 }
 
-function openGoalModal(familyGroupId) {
-  const name = prompt('Nombre de la meta (ej: Vacaciones 2026):');
-  if (!name) return;
-  const emoji = prompt('Emoji para la meta (ej: 🏖️):');
-  if (!emoji) return;
-  const targetAmount = parseFloat(prompt('Monto objetivo (ej: 5000):'));
-  if (isNaN(targetAmount) || targetAmount <= 0) {
-    showNotification('Monto inválido', 'error');
-    return;
-  }
+function openGoalModal(familyGroupId, onUpdate) {
+  const modal = document.createElement('div');
+  modal.id = 'goal-manager-modal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Crear Meta de Ahorro</h2>
+        <button class="close-modal text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+      </div>
+      <form id="add-goal-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la meta</label>
+          <input type="text" id="new-goal-name" placeholder="Ej: Vacaciones 2026" required class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Emoji</label>
+          <input type="text" id="new-goal-emoji" placeholder="Ej: 🏖️" required maxlength="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Monto Objetivo</label>
+          <input type="number" id="new-goal-amount" placeholder="Ej: 5000" required min="1" step="0.01" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+        </div>
+        <button type="submit" class="w-full gradient-bg text-white py-3 px-4 rounded-lg font-bold">Crear Meta</button>
+      </form>
+    </div>
+  `;
 
-  saveGoal(familyGroupId, { name, emoji, targetAmount });
+  document.body.appendChild(modal);
+
+  modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+
+  modal.querySelector('#add-goal-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-goal-name').value;
+    const emoji = document.getElementById('new-goal-emoji').value;
+    const targetAmount = parseFloat(document.getElementById('new-goal-amount').value);
+
+    if (isNaN(targetAmount) || targetAmount <= 0) {
+      showNotification('Monto inválido', 'error');
+      return;
+    }
+
+    await saveGoal(familyGroupId, { name, emoji, targetAmount });
+    modal.remove();
+  });
 }
 
 async function saveGoal(familyGroupId, goalData) {
@@ -88,37 +122,3 @@ async function saveGoal(familyGroupId, goalData) {
     showNotification('Error al guardar la meta.', 'error');
   }
 }
-
-
-
-
-```fdif
---- a/c/Users/Noelia/Documents/GitHub/Family-Budget-APP/js/app.js
-+++ b/c/Users/Noelia/Documents/GitHub/Family-Budget-APP/js/app.js
-@@ -80,9 +80,6 @@
-     // Add search bar to dashboard
-     addSearchToDashboard();
- 
--    // Add export and trends widgets
--    addAnalyticsWidgets();
--
-     // Setup view change handler
-     window.onViewChange = handleViewChange;
- 
-@@ -179,7 +176,7 @@
-   dashboardView.appendChild(analyticsContainer);
- }
- 
--// Update analytics widgets with transaction data
-+// Load and display analytics widgets that require all historical data
- function updateAnalyticsWidgets() {
-   const container = document.getElementById('analytics-widgets-container');
-   if (!container) return;
-@@ -533,7 +530,6 @@
-     updateRecentActivity();
-     updateExpenseChart();
-     updateBudgetWidget();
--    updateAnalyticsWidgets();
-     calculateBalance();
-   });
- }
