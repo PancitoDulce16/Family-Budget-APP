@@ -85,12 +85,6 @@ window.initializeApp = async (user) => {
 
     initializeDarkMode();
 
-    // Add search bar to dashboard
-    addSearchToDashboard();
-
-    // Initialize views that depend on categories
-    initializeCategories(userFamilyGroup, familyMembers, customCategories);
-    initializeBudgets(userFamilyGroup, customCategories);
 
     // Load historical data for analytics widgets once
     addAnalyticsWidgets();
@@ -98,6 +92,15 @@ window.initializeApp = async (user) => {
 
     // Setup view change handler
     window.onViewChange = handleViewChange;
+
+    // Add search bar to dashboard
+    addSearchToDashboard();
+
+    // Initialize views that depend on categories
+    initializeCategories(userFamilyGroup, familyMembers, customCategories);
+    initializeBudgets(userFamilyGroup, customCategories);
+
+
   }
 };
 
@@ -171,49 +174,6 @@ function addAnalyticsWidgets() {
   analyticsContainer.className = 'mt-6';
 
   dashboardView.appendChild(analyticsContainer);
-}
-
-// Load and display analytics widgets that require all historical data
-async function updateAnalyticsWidgets() {
-  const container = document.getElementById('analytics-widgets-container');
-  if (!container) return;
-
-  // Clear existing widgets
-  container.innerHTML = '';
-
-  // Fetch all transactions for analytics
-  const allTransactionsQuery = query(
-    collection(db, 'transactions'),
-    where('familyGroupId', '==', userFamilyGroup),
-    orderBy('date', 'desc')
-  );
-  const snapshot = await getDocs(allTransactionsQuery);
-  const allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-  // Calculate category totals from all transactions
-  const categoryTotals = {};
-  customCategories.forEach(cat => categoryTotals[cat.id] = 0);
-  allTransactions.filter(t => t.type === 'expense').forEach(t => {
-    if (categoryTotals.hasOwnProperty(t.category)) {
-      categoryTotals[t.category] += t.amount;
-    }
-  });
-
-  // Add export widget
-  const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories);
-  container.appendChild(exportWidget);
-
-  // Add comparison widget
-  const comparisonWidget = createComparisonWidget(allTransactions);
-  container.appendChild(comparisonWidget);
-
-  // Add trends chart
-  const trendsWidget = createTrendsChart(allTransactions);
-  container.appendChild(trendsWidget);
-
-  // Add receipt gallery
-  const galleryWidget = createReceiptGallery(allTransactions, customCategories);
-  container.appendChild(galleryWidget);
 }
 
 // Apply search filters
@@ -540,6 +500,7 @@ async function loadDashboard() {
     updateRecentActivity();
     updateExpenseChart();
     updateBudgetWidget();
+    updateAnalyticsWidgets();
     calculateBalance();
   });
 }
@@ -877,6 +838,48 @@ function openCategoryManagerModal(familyGroupId, currentCategories, onUpdate) {
       }
     }
   });
+}
+
+async function updateAnalyticsWidgets() {
+    const container = document.getElementById('analytics-widgets-container');
+    if (!container) return;
+
+    // Clear existing widgets
+    container.innerHTML = '';
+
+    // Fetch all transactions for analytics
+    const allTransactionsQuery = query(
+        collection(db, 'transactions'),
+        where('familyGroupId', '==', userFamilyGroup),
+        orderBy('date', 'desc')
+    );
+    const snapshot = await getDocs(allTransactionsQuery);
+    const allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Calculate category totals from all transactions
+    const categoryTotals = {};
+    customCategories.forEach(cat => categoryTotals[cat.id] = 0);
+    allTransactions.filter(t => t.type === 'expense').forEach(t => {
+        if (categoryTotals.hasOwnProperty(t.category)) {
+            categoryTotals[t.category] += t.amount;
+        }
+    });
+
+    // Add export widget
+    const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories);
+    container.appendChild(exportWidget);
+
+    // Add comparison widget
+    const comparisonWidget = createComparisonWidget(allTransactions);
+    container.appendChild(comparisonWidget);
+
+    // Add trends chart
+    const trendsWidget = createTrendsChart(allTransactions);
+    container.appendChild(trendsWidget);
+
+    // Add receipt gallery
+    const galleryWidget = createReceiptGallery(allTransactions, customCategories);
+    container.appendChild(galleryWidget);
 }
 
 /**
