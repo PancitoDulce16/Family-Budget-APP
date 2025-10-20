@@ -69,6 +69,7 @@ window.initializeApp = async (user) => {
 
   if (userFamilyGroup) {
     setupNavigation();
+    setupDashboardTabs();
     setupEventListeners();
 
     // Initialize and load dynamic categories
@@ -104,6 +105,32 @@ window.initializeApp = async (user) => {
 
   }
 };
+
+function setupDashboardTabs() {
+    const tabs = document.querySelectorAll('.dashboard-tab-btn');
+    const panels = document.querySelectorAll('.dashboard-tab-panel');
+
+    const setActiveTab = (tab) => {
+        const tabName = tab.dataset.tab;
+
+        tabs.forEach(t => {
+            if (t === tab) {
+                t.classList.add('bg-green-100', 'text-green-700');
+                t.classList.remove('text-gray-500', 'hover:bg-gray-100');
+            } else {
+                t.classList.remove('bg-green-100', 'text-green-700');
+                t.classList.add('text-gray-500', 'hover:bg-gray-100');
+            }
+        });
+
+        panels.forEach(panel => {
+            panel.id === `${tabName}-tab` ? panel.classList.remove('hidden') : panel.classList.add('hidden');
+        });
+    };
+
+    tabs.forEach(tab => tab.addEventListener('click', () => setActiveTab(tab)));
+    setActiveTab(tabs[0]); // Activate first tab by default
+}
 
 function handleViewChange(viewName) {
   if (viewName === 'balance') {
@@ -167,14 +194,14 @@ function addSearchToDashboard() {
 
 // Add analytics widgets (export, trends, comparison)
 function addAnalyticsWidgets() {
-  const dashboardView = document.getElementById('dashboard-view');
+  const analyticsTab = document.getElementById('analytics-tab');
 
   // Create container for analytics widgets
   const analyticsContainer = document.createElement('div');
-  analyticsContainer.id = 'analytics-widgets-container';
+  analyticsContainer.id = 'analytics-widgets-container'; // Keep this ID for updateAnalyticsWidgets
   analyticsContainer.className = 'mt-6';
 
-  dashboardView.appendChild(analyticsContainer);
+  analyticsTab.appendChild(analyticsContainer);
 }
 
 // Apply search filters
@@ -664,14 +691,13 @@ function updateBudgetWidget() {
   });
 
   // Check if widget already exists
-  let budgetContainer = document.getElementById('budget-widget-container');
-
+  const budgetContainer = document.getElementById('budget-widget-container');
   if (!budgetContainer) {
-    const dashboardView = document.getElementById('dashboard-view');
-    budgetContainer = document.createElement('div');
-    budgetContainer.id = 'budget-widget-container';
-    dashboardView.appendChild(budgetContainer);
+      console.error('Budget widget container not found!');
+      return;
   }
+
+
 
   budgetContainer.innerHTML = '';
   const widget = createBudgetWidget(categoryTotals, userFamilyGroup, customCategories);
@@ -868,7 +894,7 @@ async function updateAnalyticsWidgets() {
     });
 
     // Add export widget
-    const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories);
+    const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories, 'export-widget-container');
     container.appendChild(exportWidget);
 
     // Add comparison widget

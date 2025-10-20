@@ -172,85 +172,120 @@
         <!-- Main Content -->
         <div class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
             <!-- Dashboard View -->
-            <div id="dashboard-view" class="view-content animate-fadeIn">
+            <div id="dashboard-view" class="view-content animate-fadeIn space-y-6">
+                <!-- Dashboard Tabs -->
+                <div class="bg-white rounded-xl shadow-sm p-2">
+                    <div id="dashboard-tabs" class="flex space-x-2">
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="summary">Resumen</button>
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="analytics">Análisis</button>
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="goals">Metas</button>
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="export">Exportar y Ajustes</button>
+                    </div>
+                </div>
+
                 <!-- Quick Actions -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button id="add-expense-btn"
-                        class="bg-gradient-to-r from-red-500 to-red-600 text-white py-8 px-6 rounded-2xl hover:shadow-2xl transition-all text-xl font-bold shadow-lg transform hover:scale-105">
-                        <div class="text-4xl mb-2">💸</div>
+                        class="bg-gradient-to-r from-red-500 to-red-600 text-white py-4 px-6 rounded-2xl hover:shadow-xl transition-all text-lg font-bold shadow-md transform hover:scale-105 flex items-center justify-center gap-3">
+                        <span class="text-3xl">💸</span>
                         + Añadir Gasto
                     </button>
                     <button id="add-income-btn"
-                        class="bg-gradient-to-r from-green-500 to-green-600 text-white py-8 px-6 rounded-2xl hover:shadow-2xl transition-all text-xl font-bold shadow-lg transform hover:scale-105">
-                        <div class="text-4xl mb-2">💵</div>
+                        class="bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 rounded-2xl hover:shadow-xl transition-all text-lg font-bold shadow-md transform hover:scale-105 flex items-center justify-center gap-3">
+                        <span class="text-3xl">💵</span>
                         + Añadir Ingreso
                     </button>
                 </div>
 
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-red-500">
-                        <div class="flex items-center justify-between mb-2">
-                            <p class="text-gray-600 font-medium">Gastos del Mes</p>
-                            <span class="text-3xl">📉</span>
+                <!-- Tab Content -->
+                <div id="dashboard-tab-content">
+                    <!-- Summary Tab -->
+                    <div id="summary-tab" class="dashboard-tab-panel space-y-6">
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-red-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-gray-600 font-medium">Gastos del Mes</p>
+                                    <span class="text-3xl">📉</span>
+                                </div>
+                                <p id="total-expenses" class="text-3xl font-bold text-red-600">$0</p>
+                            </div>
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-green-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-gray-600 font-medium">Ingresos del Mes</p>
+                                    <span class="text-3xl">📈</span>
+                                </div>
+                                <p id="total-income" class="text-3xl font-bold text-green-600">$0</p>
+                            </div>
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-blue-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-gray-600 font-medium">Balance</p>
+                                    <span class="text-3xl">💰</span>
+                                </div>
+                                <p id="balance" class="text-3xl font-bold text-blue-600">$0</p>
+                            </div>
                         </div>
-                        <p id="total-expenses" class="text-3xl font-bold text-red-600">$0</p>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-green-500">
-                        <div class="flex items-center justify-between mb-2">
-                            <p class="text-gray-600 font-medium">Ingresos del Mes</p>
-                            <span class="text-3xl">📈</span>
+                        <!-- Chart and Recent Activity -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                                <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                    <span>📊</span>
+                                    Gastos por Categoría (Mes Actual)
+                                </h3>
+                                <canvas id="expense-chart"></canvas>
+                            </div>
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                                <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                    <span>🕐</span>
+                                    Actividad Reciente
+                                </h3>
+                                <div id="recent-activity" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                            </div>
                         </div>
-                        <p id="total-income" class="text-3xl font-bold text-green-600">$0</p>
                     </div>
-                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-blue-500">
-                        <div class="flex items-center justify-between mb-2">
-                            <p class="text-gray-600 font-medium">Balance</p>
-                            <span class="text-3xl">💰</span>
+
+                    <!-- Analytics Tab -->
+                    <div id="analytics-tab" class="dashboard-tab-panel hidden space-y-6">
+                        <div id="analytics-widgets-container">
+                            <!-- Widgets will be injected here by app.js -->
                         </div>
-                        <p id="balance" class="text-3xl font-bold text-blue-600">$0</p>
                     </div>
-                </div>
 
-                <!-- Settings Widget -->
-                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                    <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
-                        <span>⚙️</span>
-                        Configuración
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button id="dashboard-manage-categories-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-4 rounded-xl transition card-hover">
-                            <div class="text-3xl mb-2">🗂️</div>
-                            Gestionar Categorías
-                        </button>
-                        <!-- Add more settings buttons here in the future -->
+                    <!-- Goals & Budgets Tab -->
+                    <div id="goals-tab" class="dashboard-tab-panel hidden space-y-6">
+                        <!-- Savings Goals Widget -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                <span>🎯</span>
+                                Metas de Ahorro
+                            </h3>
+                            <div id="savings-goals-container" class="space-y-4"></div>
+                        </div>
+                        <!-- Budget Widget -->
+                        <div id="budget-widget-container">
+                            <!-- Budget widget will be injected here by app.js -->
+                        </div>
                     </div>
-                </div>
 
-                <!-- Savings Goals Widget -->
-                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                    <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
-                        <span>🎯</span>
-                        Metas de Ahorro
-                    </h3>
-                    <div id="savings-goals-container" class="space-y-4"></div>
-                </div>
-
-                <!-- Chart and Recent Activity -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
-                        <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
-                            <span>📊</span>
-                            Gastos por Categoría (Mes Actual)
-                        </h3>
-                        <canvas id="expense-chart"></canvas>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
-                        <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
-                            <span>🕐</span>
-                            Actividad Reciente
-                        </h3>
-                        <div id="recent-activity" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                    <!-- Export & Settings Tab -->
+                    <div id="export-tab" class="dashboard-tab-panel hidden space-y-6">
+                        <div id="export-widget-container">
+                            <!-- Export widget will be injected here by app.js -->
+                        </div>
+                        <!-- Settings Widget -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                <span>⚙️</span>
+                                Configuración
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <button id="dashboard-manage-categories-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-4 rounded-xl transition card-hover">
+                                    <div class="text-3xl mb-2">🗂️</div>
+                                    Gestionar Categorías
+                                </button>
+                                <!-- Add more settings buttons here in the future -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

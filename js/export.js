@@ -185,9 +185,15 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals,
 }
 
 // Create export buttons widget
-export function createExportWidget(transactions, familyGroupName, categoryTotals, customCategories) {
-  const widget = document.createElement('div');
-  widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
+export function createExportWidget(transactions, familyGroupName, categoryTotals, customCategories, containerId) {
+  const container = document.getElementById(containerId);
+  if (container) {
+      container.innerHTML = ''; // Clear previous content
+  }
+  
+  const widget = container || document.createElement('div');
+  widget.className = 'bg-white rounded-2xl shadow-lg p-6';
+
   widget.innerHTML = `
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -227,7 +233,7 @@ export function createExportWidget(transactions, familyGroupName, categoryTotals
     exportToPDF(transactions, familyGroupName, categoryTotals, customCategories);
   });
 
-  return widget;
+  if (!container) return widget;
 }
 
 // Helper function to load external scripts
