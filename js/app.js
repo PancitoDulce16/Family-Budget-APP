@@ -438,10 +438,6 @@ async function handleTransactionSubmit(e) {
         return;
       }
       receiptBase64 = await convertFileToBase64(receiptFile);
-    } else if (!editingTransaction) {
-      showNotification('Debes subir una foto del comprobante', 'error');
-      showLoading(false);
-      return;
     }
 
     const transactionData = {
