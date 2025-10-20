@@ -122,26 +122,32 @@ Ve a Firebase Console > Firestore Database > Rules y aplica estas reglas:
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Users
+    // A user can write to their own document. A user can read documents of other
+    // users ONLY if they are in the same family group.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+      function getUserFamilyGroupId() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId;
+      }
+      allow read: if request.auth != null && getUserFamilyGroupId() == resource.data.familyGroupId;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Family Groups
+    // A user can write to a group if they are creating it, or if they are adding themselves to the members list.
+    // A user can read/update a group if they are already a member.
     match /familyGroups/{groupId} {
-      allow read: if request.auth != null &&
-                    request.auth.uid in resource.data.members;
+      allow read: if request.auth.uid in resource.data.members;
       allow create: if request.auth != null;
-      allow update: if request.auth != null &&
-                      request.auth.uid in resource.data.members;
+      allow update: if request.auth.uid in resource.data.members || 
+                       request.auth.uid in request.resource.data.members;
     }
 
+    // Transactions
+    // Users can only access transactions belonging to their family group.
     match /transactions/{transactionId} {
-      allow read: if request.auth != null &&
-                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null &&
-                              resource.data.addedBy == request.auth.uid;
+      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
+      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == request.resource.data.familyGroupId;
     }
   }
 }
