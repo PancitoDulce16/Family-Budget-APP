@@ -2,7 +2,6 @@
 import { db } from './firebase-config.js';
 import { showReceiptModal, showNotification } from './ui.js';
 import { collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import { getCategoryDetails } from './custom-categories.js';
 
 let familyMembers = [];
 let userFamilyGroup = null;
@@ -187,4 +186,23 @@ function updateCategorySummary(transactions) {
 
 export function refreshCategories() {
   loadAllTransactions();
+}
+
+/**
+ * Gets the display properties for a category key.
+ * @param {string} key The category key (ID).
+ * @param {Array} categories The list of available categories.
+ * @returns {object} An object with name, emoji, and color.
+ */
+function getCategoryDetails(key, categories) {
+  const category = categories.find(c => c.id === key);
+  if (category) {
+    return {
+      name: category.name,
+      emoji: category.emoji,
+      color: category.color,
+      displayName: `${category.emoji} ${category.name}`
+    };
+  }
+  return { name: 'Sin Categoría', emoji: '❓', color: '#9CA3AF', displayName: '❓ Sin Categoría' };
 }

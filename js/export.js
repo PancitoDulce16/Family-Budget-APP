@@ -1,6 +1,5 @@
 // Export Module - Excel and PDF
 import { showLoading, showNotification } from './ui.js';
-import { getCategoryDetails } from './custom-categories.js';
 
 // Export to Excel using SheetJS
 export async function exportToExcel(transactions, familyGroupName, customCategories) {
@@ -240,4 +239,23 @@ function loadScript(src) {
     script.onerror = reject;
     document.head.appendChild(script);
   });
+}
+
+/**
+ * Gets the display properties for a category key.
+ * @param {string} key The category key (ID).
+ * @param {Array} categories The list of available categories.
+ * @returns {object} An object with name, emoji, and color.
+ */
+function getCategoryDetails(key, categories) {
+  const category = categories.find(c => c.id === key);
+  if (category) {
+    return {
+      name: category.name,
+      emoji: category.emoji,
+      color: category.color,
+      displayName: `${category.emoji} ${category.name}`
+    };
+  }
+  return { name: 'Sin Categoría', emoji: '❓', color: '#9CA3AF', displayName: '❓ Sin Categoría' };
 }
