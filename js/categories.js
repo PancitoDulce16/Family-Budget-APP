@@ -155,7 +155,21 @@ function displayFilteredTransactions(transactions) {
   });
 
   // Add total at the end
-  const total = expenses.reduce((sum, t) => sum + t.amount, 0);
+  const USD_TO_CRC_RATE = 500;
+  const total = expenses.reduce((sum, t) => {
+    let amountInGroupCurrency = t.amount;
+    const txCurrency = t.currency || familyGroupCurrency;
+
+    if (txCurrency !== familyGroupCurrency) {
+      if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+        amountInGroupCurrency = t.amount / USD_TO_CRC_RATE;
+      } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+        amountInGroupCurrency = t.amount * USD_TO_CRC_RATE;
+      }
+    }
+    return sum + amountInGroupCurrency;
+  }, 0);
+
   const totalDiv = document.createElement('div');
   totalDiv.className = 'border-t-2 border-gray-300 pt-4 mt-4';
   totalDiv.innerHTML = `
@@ -175,9 +189,22 @@ function updateCategorySummary(transactions) {
   const expenses = transactions.filter(t => t.type === 'expense');
 
   customCategories.forEach(cat => {
+    const USD_TO_CRC_RATE = 500;
     const total = expenses
       .filter(t => t.category === cat.id)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => {
+        let amountInGroupCurrency = t.amount;
+        const txCurrency = t.currency || familyGroupCurrency;
+
+        if (txCurrency !== familyGroupCurrency) {
+          if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+            amountInGroupCurrency = t.amount / USD_TO_CRC_RATE;
+          } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+            amountInGroupCurrency = t.amount * USD_TO_CRC_RATE;
+          }
+        }
+        return sum + amountInGroupCurrency;
+      }, 0);
 
     const card = document.createElement('div');
     card.className = 'text-center p-4 bg-white rounded-xl shadow-md card-hover border';

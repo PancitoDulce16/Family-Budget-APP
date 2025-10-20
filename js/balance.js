@@ -50,13 +50,25 @@ export async function calculateBalance() {
     // Calculate balances
     sharedTransactions.forEach(transaction => {
       if (transaction.type !== 'expense') return;
+      
+      // Tasa de cambio fija.
+      const USD_TO_CRC_RATE = 500;
+      let amountInGroupCurrency = transaction.amount;
+      const txCurrency = transaction.currency || familyGroupCurrency;
+
+      if (txCurrency !== familyGroupCurrency) {
+        if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+          amountInGroupCurrency = transaction.amount / USD_TO_CRC_RATE;
+        } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+          amountInGroupCurrency = transaction.amount * USD_TO_CRC_RATE;
+        }
+      }
 
       const paidBy = transaction.paidBy;
-      const amount = transaction.amount;
 
       // Add to paid amount
       if (balances[paidBy]) {
-        balances[paidBy].paid += amount;
+        balances[paidBy].paid += amountInGroupCurrency;
       }
 
       // Distribute debt among shared members
@@ -64,7 +76,7 @@ export async function calculateBalance() {
         transaction.sharedWith.forEach(share => {
           const memberId = share.userId;
           const percentage = share.percentage || 0;
-          const owedAmount = (amount * percentage) / 100;
+          const owedAmount = (amountInGroupCurrency * percentage) / 100;
 
           if (balances[memberId]) {
             balances[memberId].owes += owedAmount;
@@ -72,7 +84,7 @@ export async function calculateBalance() {
         });
       } else {
         // If no specific shares, split equally among all members
-        const perPerson = amount / familyMembers.length;
+        const perPerson = amountInGroupCurrency / familyMembers.length;
         familyMembers.forEach(member => {
           if (balances[member.id]) {
             balances[member.id].owes += perPerson;

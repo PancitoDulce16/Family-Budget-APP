@@ -544,11 +544,26 @@ function updateDashboardStats() {
   let totalExpenses = 0;
   let totalIncome = 0;
 
+  // Tasa de cambio fija. Podemos hacerla dinámica en el futuro.
+  const USD_TO_CRC_RATE = 500;
+
   currentTransactions.forEach(transaction => {
+    let amountInGroupCurrency = transaction.amount;
+    const txCurrency = transaction.currency || familyGroupCurrency;
+
+    // Convertir a la moneda del grupo si es necesario
+    if (txCurrency !== familyGroupCurrency) {
+      if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+        amountInGroupCurrency = transaction.amount / USD_TO_CRC_RATE;
+      } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+        amountInGroupCurrency = transaction.amount * USD_TO_CRC_RATE;
+      }
+    }
+
     if (transaction.type === 'expense') {
-      totalExpenses += transaction.amount;
+      totalExpenses += amountInGroupCurrency;
     } else {
-      totalIncome += transaction.amount;
+      totalIncome += amountInGroupCurrency;
     }
   });
 
