@@ -16,3 +16,4 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FAMILY_BUDGET_362EE }}'
           projectId: family-budget-362ee
+          firebaseToolsVersion: '13.7.2'
