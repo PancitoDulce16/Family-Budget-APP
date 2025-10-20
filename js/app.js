@@ -894,7 +894,7 @@ async function updateAnalyticsWidgets() {
     });
 
     // Add export widget
-    const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories, 'export-widget-container');
+    const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories);
     container.appendChild(exportWidget);
 
     // Add comparison widget
