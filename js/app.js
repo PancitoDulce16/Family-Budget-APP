@@ -21,6 +21,7 @@ import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
 import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
+import { initializeGoals } from './goals.js';
 import { showLoading, showNotification, showReceiptModal, showConfirmation } from './ui.js';
 import {
   collection,
@@ -79,6 +80,7 @@ window.initializeApp = async (user) => {
     // Initialize all modules
     initializeTasks(userFamilyGroup, familyMembers);
     initializeBalance(userFamilyGroup, familyMembers);
+
     // Process recurring transactions on startup
     await processRecurringTransactions(userFamilyGroup);
 
@@ -576,6 +578,9 @@ function updateDashboardStats() {
   document.getElementById('total-income').textContent = `$${totalIncome.toFixed(2)}`;
   document.getElementById('balance').textContent = `$${balance.toFixed(2)}`;
 
+  // Initialize or update goals with the new balance
+  initializeGoals(userFamilyGroup, balance);
+
   const balanceElement = document.getElementById('balance');
   if (balance >= 0) {
     balanceElement.classList.remove('text-red-600');
@@ -593,7 +598,13 @@ function updateRecentActivity() {
   const recent = filteredTransactions.slice(0, 10);
 
   if (recent.length === 0) {
-    recentActivityDiv.innerHTML = '<p class="text-gray-500 text-sm">No hay transacciones recientes</p>';
+    recentActivityDiv.innerHTML = `
+      <div class="text-center py-12">
+        <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <h3 class="mt-2 text-lg font-medium text-gray-800">Sin Actividad</h3>
+        <p class="mt-1 text-sm text-gray-500">Añade un gasto o ingreso para empezar.</p>
+      </div>
+    `;
     return;
   }
 

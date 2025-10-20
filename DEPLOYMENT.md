@@ -123,19 +123,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Users
-    // A user can write to their own document. A user can read documents of other
-    // users ONLY if they are in the same family group.
+    // A user can write to their own document and read documents of users in the same family group.
     match /users/{userId} {
-      function getUserFamilyGroupId() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId;
-      }
-      allow read: if request.auth != null && getUserFamilyGroupId() == resource.data.familyGroupId;
+      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
+      allow read: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Family Groups
-    // A user can write to a group if they are creating it, or if they are adding themselves to the members list.
-    // A user can read/update a group if they are already a member.
+    // A user can read a group if they are a member, create a new group, or update a group
+    // by adding themselves to the members list.
     match /familyGroups/{groupId} {
       allow read: if request.auth.uid in resource.data.members;
       allow create: if request.auth != null;
@@ -144,23 +141,25 @@ service cloud.firestore {
     }
 
     // Transactions
-    // Users can only access transactions belonging to their family group.
+    // Users can only manage transactions belonging to their family group.
     match /transactions/{transactionId} {
-      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
-      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == request.resource.data.familyGroupId;
+      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
+      allow read, update, delete: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
+      allow create: if request.auth != null && userFamilyId() == request.resource.data.familyGroupId;
     }
 
     // Tasks
-    // Users can only access tasks belonging to their family group.
+    // Users can only manage tasks belonging to their family group.
     match /tasks/{taskId} {
-      // A user can read/write tasks if they belong to the same family group.
-      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
+      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
+      allow read, write: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
     }
  
     // Budgets
-    // Users can only access the budget document that matches their family group ID.
+    // Users can only manage the budget document that matches their family group ID.
     match /budgets/{budgetId} {
-      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == budgetId;
+      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
+      allow read, write: if request.auth != null && userFamilyId() == budgetId;
     }
 
     // Categories
@@ -172,10 +171,18 @@ service cloud.firestore {
     }
 
     // Recurring Transactions
-    // Users can manage recurring transactions for their own family group.
+    // Users can only manage recurring transactions for their own family group.
     match /recurringTransactions/{recurringId} {
-      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
-      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == request.resource.data.familyGroupId;
+      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
+      allow read, update, delete: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
+      allow create: if request.auth != null && userFamilyId() == request.resource.data.familyGroupId;
+    }
+
+    // Savings Goals
+    // Users can manage goals for their own family group.
+    match /goals/{goalId} {
+      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
+      allow read, write: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
     }
   }
 }

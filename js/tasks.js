@@ -134,7 +134,13 @@ function displayTasks(tasks) {
 
   // Display pending tasks
   if (pendingTasks.length === 0) {
-    pendingDiv.innerHTML = '<p class="text-gray-500 text-sm">No hay tareas pendientes</p>';
+    pendingDiv.innerHTML = `
+      <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <h3 class="mt-2 text-md font-medium text-gray-800">¡Todo en orden!</h3>
+        <p class="mt-1 text-sm text-gray-500">No hay tareas pendientes.</p>
+      </div>
+    `;
   } else {
     pendingDiv.innerHTML = '';
     pendingTasks.forEach(task => {
@@ -144,7 +150,7 @@ function displayTasks(tasks) {
 
   // Display completed tasks
   if (completedTasks.length === 0) {
-    completedDiv.innerHTML = '<p class="text-gray-500 text-sm">No hay tareas completadas</p>';
+    completedDiv.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">Aún no se han completado tareas.</p>';
   } else {
     completedDiv.innerHTML = '';
     completedTasks.forEach(task => {
