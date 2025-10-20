@@ -61,6 +61,7 @@ export function createSearchBar(onSearch, categories = []) {
     searchInput.value = '';
     searchCategory.value = '';
     searchType.value = '';
+    searchInput.dispatchEvent(new Event('input')); // Trigger update
     performSearch();
   });
 

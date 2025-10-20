@@ -33,7 +33,6 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  onSnapshot,
   writeBatch,
   getCountFromServer
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
@@ -89,12 +88,16 @@ window.initializeApp = async (user) => {
     // Add search bar to dashboard
     addSearchToDashboard();
 
-    // Setup view change handler
-    window.onViewChange = handleViewChange;
-
     // Initialize views that depend on categories
     initializeCategories(userFamilyGroup, familyMembers, customCategories);
     initializeBudgets(userFamilyGroup, customCategories);
+
+    // Load historical data for analytics widgets once
+    addAnalyticsWidgets();
+    updateAnalyticsWidgets();
+
+    // Setup view change handler
+    window.onViewChange = handleViewChange;
   }
 };
 
@@ -199,24 +202,6 @@ function updateAnalyticsWidgets() {
     // Load all transactions for trends (not just current month)
     loadAllTransactionsForTrends();
   }
-}
-
-// Load all transactions for trends chart
-async function loadAllTransactionsForTrends() {
-  const allTransactionsQuery = query(
-    collection(db, 'transactions'),
-    where('familyGroupId', '==', userFamilyGroup),
-    orderBy('date', 'desc')
-  );
-
-  const snapshot = await getDocs(allTransactionsQuery);
-  const allTransactions = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-
-  const container = document.getElementById('analytics-widgets-container');
-  if (!container) return;
 
   // Add comparison widget
   const comparisonWidget = createComparisonWidget(allTransactions);
@@ -229,6 +214,11 @@ async function loadAllTransactionsForTrends() {
   // Add receipt gallery
   const galleryWidget = createReceiptGallery(allTransactions, customCategories);
   container.appendChild(galleryWidget);
+}
+
+// This function is now redundant as its logic is merged into updateAnalyticsWidgets
+async function loadAllTransactionsForTrends() {
+  // The logic has been moved to updateAnalyticsWidgets to avoid multiple queries.
 }
 
 // Apply search filters
@@ -555,7 +545,6 @@ async function loadDashboard() {
     updateRecentActivity();
     updateExpenseChart();
     updateBudgetWidget();
-    updateAnalyticsWidgets();
     calculateBalance();
   });
 }

@@ -258,7 +258,10 @@ export function showFamilyGroupSetup() {
     try {
       await joinFamilyGroup(inviteCode);
       modal.remove();
-      window.location.reload();
+      // Re-initialize the app without a hard reload
+      if (window.initializeApp) {
+        window.initializeApp(getCurrentUser());
+      }
     } catch (error) {
       console.error('Error:', error);
     }
@@ -266,6 +269,9 @@ export function showFamilyGroupSetup() {
 
   closeGroupModal?.addEventListener('click', () => {
     modal.remove();
-    window.location.reload();
+    // Re-initialize the app without a hard reload
+    if (window.initializeApp) {
+      window.initializeApp(getCurrentUser());
+    }
   });
 }
