@@ -34,8 +34,7 @@ import {
   orderBy,
   serverTimestamp,
   writeBatch,
-  getCountFromServer,
-  onSnapshot
+  getCountFromServer
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // Global variables
