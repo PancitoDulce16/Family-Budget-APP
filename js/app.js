@@ -175,7 +175,7 @@ function addAnalyticsWidgets() {
 }
 
 // Update analytics widgets with transaction data
-function updateAnalyticsWidgets() {
+async function updateAnalyticsWidgets() {
   const container = document.getElementById('analytics-widgets-container');
   if (!container) return;
 
