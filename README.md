@@ -241,6 +241,13 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
       allow create: if request.auth != null && userFamilyId() == request.resource.data.familyGroupId;
     }
+
+    // Recurring Transactions
+    // Users can manage recurring transactions for their own family group.
+    match /recurringTransactions/{recurringId} {
+      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
+      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == request.resource.data.familyGroupId;
+    }
   }
 }
 ```

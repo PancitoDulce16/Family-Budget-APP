@@ -197,6 +197,27 @@ service cloud.firestore {
       // A user can read/write tasks if they belong to the same family group.
       allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
     }
+
+    // Budgets
+    // Users can only access the budget document that matches their family group ID.
+    match /budgets/{budgetId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == budgetId;
+    }
+
+    // Categories
+    // Users can manage categories belonging to their family group.
+    match /categories/{categoryId} {
+      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
+      allow read, update, delete: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
+      allow create: if request.auth != null && userFamilyId() == request.resource.data.familyGroupId;
+    }
+
+    // Recurring Transactions
+    // Users can manage recurring transactions for their own family group.
+    match /recurringTransactions/{recurringId} {
+      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
+      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == request.resource.data.familyGroupId;
+    }
   }
 }
 ```
