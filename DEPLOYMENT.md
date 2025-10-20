@@ -166,8 +166,8 @@ service cloud.firestore {
     // Categories
     // Users can manage categories belonging to their family group.
     match /categories/{categoryId} {
-      function userFamilyId() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId; }
-      allow read, update, delete: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
+      allow get, update, delete: if request.auth != null && userFamilyId() == resource.data.familyGroupId;
+      allow list: if request.auth != null && userFamilyId() == request.query.filters.familyGroupId;
       allow create: if request.auth != null && userFamilyId() == request.resource.data.familyGroupId;
     }
 
