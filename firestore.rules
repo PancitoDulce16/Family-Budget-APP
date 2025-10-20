@@ -12,7 +12,7 @@ service cloud.firestore {
     // who are part of the family group
     match /transactions/{transactionId} {
       allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId != null;
-      allow create: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.familyGroupId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId;
       allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
     }
 
