@@ -1,11 +1,16 @@
 // Transactions Management Module
 import { db } from './firebase-config.js';
-import { getCurrentUser, showLoading, showNotification } from './auth.js';
+import { showLoading, showNotification, showConfirmation } from './ui.js';
 import {
   doc,
   updateDoc,
   deleteDoc,
-  getDoc
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 let currentEditingTransaction = null;
@@ -29,7 +34,11 @@ export async function editTransaction(transactionId, updatedData) {
 
 // Delete transaction
 export async function deleteTransaction(transactionId) {
-  const confirmDelete = confirm('¿Estás seguro de eliminar esta transacción?');
+  const confirmDelete = await showConfirmation(
+    '¿Eliminar Transacción?',
+    'Esta acción no se puede deshacer. ¿Estás seguro?',
+    'Sí, Eliminar'
+  );
 
   if (!confirmDelete) return false;
 
@@ -88,10 +97,23 @@ export function openEditModal(transaction, familyMembers) {
 
   // Show existing receipt
   if (transaction.receiptBase64) {
-    const preview = document.getElementById('receipt-preview');
-    const previewImg = document.getElementById('preview-image');
-    previewImg.src = transaction.receiptBase64;
-    preview.classList.remove('hidden');
+    const receiptPreviewContainer = document.getElementById('receipt-preview');
+    const receiptDropZone = document.getElementById('receipt-drop-zone');
+
+    receiptPreviewContainer.innerHTML = `
+      <div class="relative">
+        <img src="${transaction.receiptBase64}" class="max-h-48 rounded-lg shadow-md" alt="Preview">
+        <button type="button" id="remove-receipt-btn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold">&times;</button>
+      </div>
+    `;
+    receiptPreviewContainer.classList.remove('hidden');
+    receiptDropZone.classList.add('hidden');
+
+    document.getElementById('remove-receipt-btn').addEventListener('click', () => {
+      document.getElementById('transaction-receipt').value = '';
+      receiptPreviewContainer.classList.add('hidden');
+      receiptDropZone.classList.remove('hidden');
+    });
   }
 
   // Handle shared expense
@@ -156,4 +178,65 @@ export function createTransactionActions(transaction, onEdit, onDelete) {
   actionsDiv.appendChild(deleteBtn);
 
   return actionsDiv;
+}
+
+/**
+ * Checks for any recurring transactions that are due and creates them as standard transactions.
+ * This should be called once when the app initializes.
+ * @param {string} familyGroupId The ID of the user's family group.
+ */
+export async function processRecurringTransactions(familyGroupId) {
+  if (!familyGroupId) return;
+
+  const now = new Date();
+  // Query for recurring transactions that are due
+  const recurringQuery = query(
+    collection(db, 'recurringTransactions'),
+    where('familyGroupId', '==', familyGroupId),
+    where('nextDueDate', '<=', now)
+  );
+
+  try {
+    const snapshot = await getDocs(recurringQuery);
+    if (snapshot.empty) {
+      return; // No recurring transactions are due
+    }
+
+    const batchPromises = [];
+    snapshot.forEach(docSnap => {
+      const recurringTx = docSnap.data();
+      const recurringTxId = docSnap.id;
+
+      // 1. Create a new transaction from the recurring template
+      const newTransactionData = {
+        ...recurringTx.transactionData,
+        date: recurringTx.nextDueDate, // Use the due date as the transaction date
+        isRecurring: true, // Mark it as originated from a recurring transaction
+        recurringSourceId: recurringTxId
+      };
+      batchPromises.push(addDoc(collection(db, 'transactions'), newTransactionData));
+
+      // 2. Calculate the next due date based on frequency
+      const currentDueDate = recurringTx.nextDueDate.toDate();
+      let nextDueDate;
+      if (recurringTx.frequency === 'monthly') {
+        nextDueDate = new Date(currentDueDate.setMonth(currentDueDate.getMonth() + 1));
+      } else if (recurringTx.frequency === 'weekly') {
+        nextDueDate = new Date(currentDueDate.setDate(currentDueDate.getDate() + 7));
+      } // Can be expanded with 'yearly', 'daily', etc.
+
+      // 3. Update the recurring transaction with the new nextDueDate
+      if (nextDueDate) {
+        batchPromises.push(updateDoc(doc(db, 'recurringTransactions', recurringTxId), { nextDueDate }));
+      }
+    });
+
+    await Promise.all(batchPromises);
+    if (snapshot.size > 0) {
+      showNotification(`${snapshot.size} gasto(s) recurrente(s) añadido(s) automáticamente.`, 'info');
+    }
+  } catch (error) {
+    console.error("Error processing recurring transactions: ", error);
+    showNotification('Error al procesar gastos recurrentes.', 'error');
+  }
 }

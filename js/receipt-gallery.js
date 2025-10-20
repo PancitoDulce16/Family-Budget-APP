@@ -1,5 +1,6 @@
 // Receipt Gallery Module
-export function createReceiptGallery(transactions) {
+import { getCategoryDetails } from './custom-categories.js';
+export function createReceiptGallery(transactions, customCategories) {
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
   widget.innerHTML = `
@@ -39,7 +40,7 @@ export function createReceiptGallery(transactions) {
       `;
 
       card.addEventListener('click', () => {
-        openLightbox(transactionsWithReceipts, index);
+        openLightbox(transactionsWithReceipts, index, customCategories);
       });
 
       grid.appendChild(card);
@@ -53,7 +54,7 @@ export function createReceiptGallery(transactions) {
   return widget;
 }
 
-function openLightbox(transactions, startIndex) {
+function openLightbox(transactions, startIndex, customCategories) {
   let currentIndex = startIndex;
 
   const lightbox = document.createElement('div');
@@ -133,8 +134,8 @@ function openLightbox(transactions, startIndex) {
 
     img.src = transaction.receiptBase64;
     description.textContent = transaction.description;
-    amount.textContent = `$${transaction.amount.toFixed(2)}`;
-    category.textContent = getCategoryName(transaction.category);
+    amount.textContent = `${transaction.type === 'expense' ? '-' : '+'}$${transaction.amount.toFixed(2)}`;
+    category.textContent = getCategoryDetails(transaction.category, customCategories).displayName;
     date.textContent = transaction.date?.toDate
       ? transaction.date.toDate().toLocaleDateString('es-ES', { dateStyle: 'long' })
       : new Date(transaction.date).toLocaleDateString('es-ES', { dateStyle: 'long' });
@@ -218,14 +219,4 @@ function downloadAllReceipts(transactions) {
   if (confirm(`¿Descargar ${transactions.length} comprobantes? Esto puede tomar unos momentos.`)) {
     downloadNext();
   }
-}
-
-function getCategoryName(category) {
-  const categories = {
-    'casa': '🏠 Casa',
-    'servicios': '⚡ Servicios',
-    'elias': '👤 Elías',
-    'papas': '👨‍👩‍👦 Papás'
-  };
-  return categories[category] || category;
 }

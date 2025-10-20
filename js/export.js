@@ -1,8 +1,9 @@
 // Export Module - Excel and PDF
-import { showLoading, showNotification } from './auth.js';
+import { showLoading, showNotification } from './ui.js';
+import { getCategoryDetails } from './custom-categories.js';
 
 // Export to Excel using SheetJS
-export async function exportToExcel(transactions, familyGroupName) {
+export async function exportToExcel(transactions, familyGroupName, customCategories) {
   try {
     showLoading(true);
 
@@ -15,7 +16,7 @@ export async function exportToExcel(transactions, familyGroupName) {
     const data = transactions.map(t => ({
       'Fecha': t.date?.toDate ? t.date.toDate().toLocaleDateString('es-ES') : new Date(t.date).toLocaleDateString('es-ES'),
       'Tipo': t.type === 'expense' ? 'Gasto' : 'Ingreso',
-      'Categoría': getCategoryName(t.category),
+      'Categoría': getCategoryDetails(t.category, customCategories).displayName,
       'Descripción': t.description,
       'Monto': t.amount,
       'Pagado por': t.paidByName || t.paidBy,
@@ -59,7 +60,7 @@ export async function exportToExcel(transactions, familyGroupName) {
 }
 
 // Export to PDF using jsPDF
-export async function exportToPDF(transactions, familyGroupName, categoryTotals) {
+export async function exportToPDF(transactions, familyGroupName, categoryTotals, customCategories) {
   try {
     showLoading(true);
 
@@ -87,16 +88,10 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals)
     doc.text('Resumen por Categoría', 15, 40);
 
     let yPosition = 48;
-    const categories = [
-      { key: 'casa', name: 'Casa', emoji: '🏠' },
-      { key: 'servicios', name: 'Servicios', emoji: '⚡' },
-      { key: 'elias', name: 'Elías', emoji: '👤' },
-      { key: 'papas', name: 'Papás', emoji: '👨‍👩‍👦' }
-    ];
 
     doc.setFontSize(11);
-    categories.forEach(cat => {
-      const total = categoryTotals[cat.key] || 0;
+    customCategories.forEach(cat => {
+      const total = categoryTotals[cat.id] || 0;
       doc.text(`${cat.emoji} ${cat.name}: $${total.toFixed(2)}`, 20, yPosition);
       yPosition += 7;
     });
@@ -144,7 +139,7 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals)
 
       const date = t.date?.toDate ? t.date.toDate().toLocaleDateString('es-ES') : new Date(t.date).toLocaleDateString('es-ES');
       const type = t.type === 'expense' ? 'Gasto' : 'Ingreso';
-      const category = getCategoryName(t.category);
+      const category = getCategoryDetails(t.category, customCategories).name;
       const description = t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description;
       const amount = `$${t.amount.toFixed(2)}`;
 
@@ -191,7 +186,7 @@ export async function exportToPDF(transactions, familyGroupName, categoryTotals)
 }
 
 // Create export buttons widget
-export function createExportWidget(transactions, familyGroupName, categoryTotals) {
+export function createExportWidget(transactions, familyGroupName, categoryTotals, customCategories) {
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
   widget.innerHTML = `
@@ -226,11 +221,11 @@ export function createExportWidget(transactions, familyGroupName, categoryTotals
   const pdfBtn = widget.querySelector('#export-pdf-btn');
 
   excelBtn.addEventListener('click', () => {
-    exportToExcel(transactions, familyGroupName);
+    exportToExcel(transactions, familyGroupName, customCategories);
   });
 
   pdfBtn.addEventListener('click', () => {
-    exportToPDF(transactions, familyGroupName, categoryTotals);
+    exportToPDF(transactions, familyGroupName, categoryTotals, customCategories);
   });
 
   return widget;
@@ -245,15 +240,4 @@ function loadScript(src) {
     script.onerror = reject;
     document.head.appendChild(script);
   });
-}
-
-// Helper function to get category display name
-function getCategoryName(category) {
-  const categories = {
-    'casa': '🏠 Casa',
-    'servicios': '⚡ Servicios',
-    'elias': '👤 Elías',
-    'papas': '👨‍👩‍👦 Papás'
-  };
-  return categories[category] || category;
 }

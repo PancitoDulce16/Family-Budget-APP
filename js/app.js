@@ -1,6 +1,6 @@
 // Main Application Module - Complete Enhanced Version
 import { auth, db } from './firebase-config.js';
-import { getCurrentUser, showLoading, showNotification } from './auth.js';
+import { getCurrentUser } from './auth.js';
 import { setupNavigation } from './navigation.js';
 import { initializeTasks } from './tasks.js';
 import { initializeBalance, calculateBalance } from './balance.js';
@@ -11,7 +11,8 @@ import {
   openEditModal,
   getCurrentEditingTransaction,
   clearCurrentEditingTransaction,
-  createTransactionActions
+  createTransactionActions,
+  processRecurringTransactions
 } from './transactions.js';
 import { createSearchBar, filterTransactions } from './search.js';
 import { initializeBudgets, createBudgetWidget, getCurrentBudgets } from './budgets.js';
@@ -19,6 +20,12 @@ import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
 import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
+import { showLoading, showNotification, showReceiptModal } from './ui.js';
+import {
+  initializeDefaultCategories,
+  getCustomCategories,
+  openCategoryManagerModal
+} from './custom-categories.js';
 import {
   collection,
   doc,
@@ -37,6 +44,7 @@ let currentUser = null;
 let userFamilyGroup = null;
 let familyMembers = [];
 let currentTransactions = [];
+let customCategories = [];
 let filteredTransactions = [];
 let expenseChart = null;
 let searchFilters = { query: '', category: '', type: '' };
@@ -52,8 +60,8 @@ const transactionTypeInput = document.getElementById('transaction-type');
 const sharedCheckbox = document.getElementById('transaction-shared');
 const sharedOptions = document.getElementById('shared-options');
 const receiptInput = document.getElementById('transaction-receipt');
-const receiptPreview = document.getElementById('receipt-preview');
-const previewImage = document.getElementById('preview-image');
+const receiptDropZone = document.getElementById('receipt-drop-zone');
+const receiptPreviewContainer = document.getElementById('receipt-preview');
 
 // Initialize app
 window.initializeApp = async (user) => {
@@ -63,23 +71,33 @@ window.initializeApp = async (user) => {
   if (userFamilyGroup) {
     setupNavigation();
     setupEventListeners();
+
+    // Initialize and load dynamic categories
+    await initializeDefaultCategories(userFamilyGroup);
+    await loadCustomCategories();
+
+    // Load historical data for analytics just once
+    addAnalyticsWidgets();
+
     await loadDashboard();
 
     // Initialize all modules
     initializeTasks(userFamilyGroup, familyMembers);
     initializeBalance(userFamilyGroup, familyMembers);
-    initializeCategories(userFamilyGroup, familyMembers);
-    initializeBudgets(userFamilyGroup);
+    // Process recurring transactions on startup
+    await processRecurringTransactions(userFamilyGroup);
+
     initializeDarkMode();
 
     // Add search bar to dashboard
     addSearchToDashboard();
 
-    // Add export and trends widgets
-    addAnalyticsWidgets();
-
     // Setup view change handler
     window.onViewChange = handleViewChange;
+
+    // Initialize views that depend on categories
+    initializeCategories(userFamilyGroup, familyMembers, customCategories);
+    initializeBudgets(userFamilyGroup, customCategories);
   }
 };
 
@@ -122,6 +140,14 @@ async function loadFamilyMembers() {
   }));
 }
 
+async function loadCustomCategories() {
+  customCategories = await getCustomCategories(userFamilyGroup);
+  // Populate dropdowns that depend on categories
+  populateCategoryDropdown(document.getElementById('transaction-category'));
+  populateCategoryDropdown(document.getElementById('filter-category'), 'Todas');
+  // The search bar categories are populated within its own module
+}
+
 // Add search bar to dashboard
 function addSearchToDashboard() {
   const dashboardView = document.getElementById('dashboard-view');
@@ -130,7 +156,7 @@ function addSearchToDashboard() {
   const searchBar = createSearchBar((filters) => {
     searchFilters = filters;
     applySearchFilters();
-  });
+  }, customCategories);
 
   dashboardView.insertBefore(searchBar, quickActions);
 }
@@ -159,23 +185,16 @@ function updateAnalyticsWidgets() {
   const familyGroupName = userFamilyGroup || 'Mi Familia';
 
   // Calculate category totals
-  const categoryTotals = {
-    casa: 0,
-    servicios: 0,
-    elias: 0,
-    papas: 0
-  };
-
-  currentTransactions.forEach(transaction => {
-    if (transaction.type === 'expense') {
-      if (categoryTotals.hasOwnProperty(transaction.category)) {
-        categoryTotals[transaction.category] += transaction.amount;
-      }
+  const categoryTotals = {};
+  customCategories.forEach(cat => categoryTotals[cat.id] = 0);
+  currentTransactions.filter(t => t.type === 'expense').forEach(t => {
+    if (categoryTotals.hasOwnProperty(t.category)) {
+      categoryTotals[t.category] += t.amount;
     }
   });
 
   // Add export widget
-  const exportWidget = createExportWidget(currentTransactions, familyGroupName, categoryTotals);
+  const exportWidget = createExportWidget(currentTransactions, familyGroupName, categoryTotals, customCategories);
   container.appendChild(exportWidget);
 
   // Add trends chart (if we have transactions)
@@ -211,7 +230,7 @@ async function loadAllTransactionsForTrends() {
   container.appendChild(trendsWidget);
 
   // Add receipt gallery
-  const galleryWidget = createReceiptGallery(allTransactions);
+  const galleryWidget = createReceiptGallery(allTransactions, customCategories);
   container.appendChild(galleryWidget);
 }
 
@@ -234,6 +253,17 @@ function populatePaidByDropdown() {
   });
 
   populateSharedMembers();
+}
+
+function populateCategoryDropdown(selectElement, allOptionText = 'Seleccionar...') {
+  if (!selectElement) return;
+  selectElement.innerHTML = `<option value="">${allOptionText}</option>`;
+  customCategories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat.id;
+    option.textContent = `${cat.emoji} ${cat.name}`;
+    selectElement.appendChild(option);
+  });
 }
 
 // Populate shared members checkboxes
@@ -276,6 +306,12 @@ function setupEventListeners() {
     openTransactionModal('income');
   });
 
+  document.getElementById('manage-categories-btn')?.addEventListener('click', () => {
+    openCategoryManagerModal(userFamilyGroup, customCategories, async () => {
+      await loadCustomCategories(); // Refresh categories everywhere
+    });
+  });
+
   closeModalBtn?.addEventListener('click', () => {
     clearCurrentEditingTransaction();
     closeTransactionModal();
@@ -307,15 +343,51 @@ function setupEventListeners() {
     }
   });
 
-  receiptInput?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        previewImage.src = e.target.result;
-        receiptPreview.classList.remove('hidden');
-      };
-      reader.readAsDataURL(file);
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      showNotification('Por favor, selecciona un archivo de imagen.', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      receiptPreviewContainer.innerHTML = `
+        <div class="relative">
+          <img src="${e.target.result}" class="max-h-48 rounded-lg shadow-md" alt="Preview">
+          <button type="button" id="remove-receipt-btn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold">&times;</button>
+        </div>
+      `;
+      receiptPreviewContainer.classList.remove('hidden');
+      receiptDropZone.classList.add('hidden');
+
+      document.getElementById('remove-receipt-btn').addEventListener('click', () => {
+        receiptInput.value = '';
+        receiptPreviewContainer.classList.add('hidden');
+        receiptPreviewContainer.innerHTML = '';
+        receiptDropZone.classList.remove('hidden');
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  receiptInput?.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+  // Drag and Drop events
+  receiptDropZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    receiptDropZone.classList.add('border-green-500', 'bg-green-50');
+  });
+
+  receiptDropZone?.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    receiptDropZone.classList.remove('border-green-500', 'bg-green-50');
+  });
+
+  receiptDropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    receiptDropZone.classList.remove('border-green-500', 'bg-green-50');
+    if (e.dataTransfer.files.length) {
+      receiptInput.files = e.dataTransfer.files;
+      handleFile(e.dataTransfer.files[0]);
     }
   });
 
@@ -348,7 +420,8 @@ function openTransactionModal(type) {
 function closeTransactionModal() {
   transactionModal.classList.add('hidden');
   transactionForm.reset();
-  receiptPreview.classList.add('hidden');
+  receiptPreviewContainer.classList.add('hidden');
+  receiptDropZone.classList.remove('hidden');
   sharedOptions.classList.add('hidden');
   sharedCheckbox.checked = false;
 }
@@ -477,7 +550,6 @@ async function loadDashboard() {
     updateRecentActivity();
     updateExpenseChart();
     updateBudgetWidget();
-    updateAnalyticsWidgets();
     calculateBalance();
   });
 }
@@ -561,18 +633,11 @@ function updateRecentActivity() {
 }
 
 function updateExpenseChart() {
-  const categoryTotals = {
-    casa: 0,
-    servicios: 0,
-    elias: 0,
-    papas: 0
-  };
-
-  currentTransactions.forEach(transaction => {
-    if (transaction.type === 'expense') {
-      if (categoryTotals.hasOwnProperty(transaction.category)) {
-        categoryTotals[transaction.category] += transaction.amount;
-      }
+  const categoryTotals = {};
+  customCategories.forEach(cat => categoryTotals[cat.id] = 0);
+  currentTransactions.filter(t => t.type === 'expense').forEach(t => {
+    if (categoryTotals.hasOwnProperty(t.category)) {
+      categoryTotals[t.category] += t.amount;
     }
   });
 
@@ -598,20 +663,10 @@ function updateExpenseChart() {
   expenseChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Casa', 'Servicios', 'Elías', 'Papás'],
+      labels: customCategories.map(c => c.name),
       datasets: [{
-        data: [
-          categoryTotals.casa,
-          categoryTotals.servicios,
-          categoryTotals.elias,
-          categoryTotals.papas
-        ],
-        backgroundColor: [
-          '#9333EA',
-          '#3B82F6',
-          '#10B981',
-          '#F97316'
-        ],
+        data: customCategories.map(c => categoryTotals[c.id] || 0),
+        backgroundColor: customCategories.map(c => c.color),
         borderWidth: 2,
         borderColor: '#ffffff'
       }]
@@ -638,18 +693,11 @@ function updateExpenseChart() {
 }
 
 function updateBudgetWidget() {
-  const categoryTotals = {
-    casa: 0,
-    servicios: 0,
-    elias: 0,
-    papas: 0
-  };
-
-  currentTransactions.forEach(transaction => {
-    if (transaction.type === 'expense') {
-      if (categoryTotals.hasOwnProperty(transaction.category)) {
-        categoryTotals[transaction.category] += transaction.amount;
-      }
+  const categoryTotals = {};
+  customCategories.forEach(cat => categoryTotals[cat.id] = 0);
+  currentTransactions.filter(t => t.type === 'expense').forEach(t => {
+    if (categoryTotals.hasOwnProperty(t.category)) {
+      categoryTotals[t.category] += t.amount;
     }
   });
 
@@ -664,7 +712,7 @@ function updateBudgetWidget() {
   }
 
   budgetContainer.innerHTML = '';
-  const widget = createBudgetWidget(categoryTotals, userFamilyGroup);
+  const widget = createBudgetWidget(categoryTotals, userFamilyGroup, customCategories);
   budgetContainer.appendChild(widget);
 }
 
@@ -674,31 +722,5 @@ function convertFileToBase64(file) {
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
-  });
-}
-
-function showReceiptModal(base64Image, description) {
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50';
-  modal.innerHTML = `
-    <div class="bg-white rounded-lg max-w-2xl w-full p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold">Comprobante - ${description}</h3>
-        <button class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-      </div>
-      <img src="${base64Image}" class="w-full rounded-lg" alt="Comprobante">
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  modal.querySelector('button').addEventListener('click', () => {
-    modal.remove();
-  });
-
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove();
-    }
   });
 }

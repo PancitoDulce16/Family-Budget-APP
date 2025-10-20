@@ -1,14 +1,18 @@
 // Categories Module - Filtered transactions view
 import { db } from './firebase-config.js';
+import { showReceiptModal, showNotification } from './ui.js';
 import { collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getCategoryDetails } from './custom-categories.js';
 
 let familyMembers = [];
 let userFamilyGroup = null;
 let allTransactions = [];
+let customCategories = [];
 
-export function initializeCategories(familyGroupId, members) {
+export function initializeCategories(familyGroupId, members, categories) {
   userFamilyGroup = familyGroupId;
   familyMembers = members;
+  customCategories = categories;
 
   setupCategoryFilters();
   populateYearFilter();
@@ -60,6 +64,7 @@ async function loadAllTransactions() {
 
     applyFilters();
   } catch (error) {
+    showNotification('Error al cargar transacciones.', 'error');
     console.error('Error cargando transacciones:', error);
   }
 }
@@ -110,42 +115,23 @@ function displayFilteredTransactions(transactions) {
   // Only show expenses
   const expenses = transactions.filter(t => t.type === 'expense');
 
-  expenses.forEach(transaction => {
-    const member = familyMembers.find(m => m.id === transaction.paidBy);
+  expenses.forEach(t => {
+    const member = familyMembers.find(m => m.id === t.paidBy);
     const memberName = member ? member.displayName : 'Desconocido';
-
-    const date = transaction.date?.toDate ? transaction.date.toDate() : new Date(transaction.date);
-    const dateStr = date.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-
-    const categoryColors = {
-      casa: 'bg-purple-50 border-purple-200 text-purple-700',
-      servicios: 'bg-blue-50 border-blue-200 text-blue-700',
-      elias: 'bg-green-50 border-green-200 text-green-700',
-      papas: 'bg-orange-50 border-orange-200 text-orange-700'
-    };
-
-    const categoryNames = {
-      casa: 'Casa',
-      servicios: 'Servicios',
-      elias: 'Elías',
-      papas: 'Papás'
-    };
-
-    const colorClass = categoryColors[transaction.category] || 'bg-gray-50 border-gray-200 text-gray-700';
+    const categoryDetails = getCategoryDetails(t.category, customCategories);
+    const date = t.date?.toDate ? t.date.toDate() : new Date(t.date);
+    const dateStr = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
 
     const div = document.createElement('div');
-    div.className = `border rounded-lg p-4 cursor-pointer hover:shadow-md transition ${colorClass}`;
+    div.className = `border rounded-lg p-4 cursor-pointer hover:shadow-md transition bg-gray-50 border-gray-200`;
+    div.style.borderLeft = `4px solid ${categoryDetails.color}`;
     div.innerHTML = `
       <div class="flex justify-between items-start mb-2">
         <div class="flex-1">
-          <h4 class="font-semibold">${transaction.description}</h4>
-          <p class="text-sm opacity-75">${categoryNames[transaction.category]}</p>
+          <h4 class="font-semibold">${t.description}</h4>
+          <p class="text-sm opacity-75">${categoryDetails.displayName}</p>
         </div>
-        <p class="text-xl font-bold">$${transaction.amount.toFixed(2)}</p>
+        <p class="text-xl font-bold text-red-600">-$${t.amount.toFixed(2)}</p>
       </div>
       <div class="flex justify-between items-center text-sm opacity-75">
         <span>${memberName}</span>
@@ -155,8 +141,8 @@ function displayFilteredTransactions(transactions) {
 
     // Click to view receipt
     div.addEventListener('click', () => {
-      if (transaction.receiptBase64) {
-        showReceiptModal(transaction.receiptBase64, transaction.description);
+      if (t.receiptBase64) {
+        showReceiptModal(t.receiptBase64, t.description);
       }
     });
 
@@ -177,51 +163,25 @@ function displayFilteredTransactions(transactions) {
 }
 
 function updateCategorySummary(transactions) {
+  const summaryGrid = document.getElementById('category-summary-grid');
+  if (!summaryGrid) return;
+
+  summaryGrid.innerHTML = '';
   const expenses = transactions.filter(t => t.type === 'expense');
 
-  const totals = {
-    casa: 0,
-    servicios: 0,
-    elias: 0,
-    papas: 0
-  };
+  customCategories.forEach(cat => {
+    const total = expenses
+      .filter(t => t.category === cat.id)
+      .reduce((sum, t) => sum + t.amount, 0);
 
-  expenses.forEach(transaction => {
-    if (totals.hasOwnProperty(transaction.category)) {
-      totals[transaction.category] += transaction.amount;
-    }
-  });
-
-  document.getElementById('cat-casa').textContent = `$${totals.casa.toFixed(2)}`;
-  document.getElementById('cat-servicios').textContent = `$${totals.servicios.toFixed(2)}`;
-  document.getElementById('cat-elias').textContent = `$${totals.elias.toFixed(2)}`;
-  document.getElementById('cat-papas').textContent = `$${totals.papas.toFixed(2)}`;
-}
-
-// Show receipt modal (reused from app.js)
-function showReceiptModal(base64Image, description) {
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50';
-  modal.innerHTML = `
-    <div class="bg-white rounded-lg max-w-2xl w-full p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold">Comprobante - ${description}</h3>
-        <button class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-      </div>
-      <img src="${base64Image}" class="w-full rounded-lg" alt="Comprobante">
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  modal.querySelector('button').addEventListener('click', () => {
-    modal.remove();
-  });
-
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove();
-    }
+    const card = document.createElement('div');
+    card.className = 'text-center p-4 bg-white rounded-xl shadow-md card-hover border';
+    card.style.borderColor = cat.color;
+    card.innerHTML = `
+      <p class="text-sm text-gray-600 mb-1">${cat.emoji} ${cat.name}</p>
+      <p class="text-2xl font-bold" style="color: ${cat.color};">$${total.toFixed(2)}</p>
+    `;
+    summaryGrid.appendChild(card);
   });
 }
 

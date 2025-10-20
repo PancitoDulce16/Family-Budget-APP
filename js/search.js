@@ -1,5 +1,5 @@
 // Search Module
-export function createSearchBar(onSearch) {
+export function createSearchBar(onSearch, categories = []) {
   const searchContainer = document.createElement('div');
   searchContainer.className = 'mb-6';
   searchContainer.innerHTML = `
@@ -11,11 +11,7 @@ export function createSearchBar(onSearch) {
         </div>
         <div class="flex gap-2">
           <select id="search-category" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-            <option value="">Todas las categorías</option>
-            <option value="casa">🏠 Casa</option>
-            <option value="servicios">⚡ Servicios</option>
-            <option value="elias">👤 Elías</option>
-            <option value="papas">👨‍👩‍👦 Papás</option>
+            <!-- Options will be populated dynamically -->
           </select>
           <select id="search-type" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
             <option value="">Todos los tipos</option>
@@ -34,6 +30,16 @@ export function createSearchBar(onSearch) {
   const searchCategory = searchContainer.querySelector('#search-category');
   const searchType = searchContainer.querySelector('#search-type');
   const clearBtn = searchContainer.querySelector('#clear-search');
+
+  // Populate categories dynamically
+  searchCategory.innerHTML = '<option value="">Todas las categorías</option>';
+  categories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat.id;
+    option.textContent = `${cat.emoji} ${cat.name}`;
+    searchCategory.appendChild(option);
+  });
+
 
   const performSearch = () => {
     const query = searchInput.value.toLowerCase();

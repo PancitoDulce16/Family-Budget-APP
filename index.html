@@ -212,12 +212,27 @@
                     </div>
                 </div>
 
+                <!-- Settings Widget -->
+                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                        <span>⚙️</span>
+                        Configuración
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button id="dashboard-manage-categories-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-4 rounded-xl transition card-hover">
+                            <div class="text-3xl mb-2">🗂️</div>
+                            Gestionar Categorías
+                        </button>
+                        <!-- Add more settings buttons here in the future -->
+                    </div>
+                </div>
+
                 <!-- Chart and Recent Activity -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                     <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
                         <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
                             <span>📊</span>
-                            Gastos por Categoría
+                            Gastos por Categoría (Mes Actual)
                         </h3>
                         <canvas id="expense-chart"></canvas>
                     </div>
@@ -234,21 +249,21 @@
             <!-- Categories View -->
             <div id="categories-view" class="view-content hidden animate-fadeIn">
                 <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                    <h2 class="text-3xl font-bold mb-6 text-gray-800 flex items-center gap-3">
-                        <span>📁</span>
-                        Ver por Categoría
-                    </h2>
-
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                            <span>📁</span>
+                            Análisis por Categoría
+                        </h2>
+                        <button id="manage-categories-btn" class="gradient-bg text-white px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold shadow-md text-sm">
+                            Gestionar Categorías
+                        </button>
+                    </div>
                     <!-- Filters -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
                             <select id="filter-category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
-                                <option value="">Todas</option>
-                                <option value="casa">🏠 Casa</option>
-                                <option value="servicios">⚡ Servicios</option>
-                                <option value="elias">👤 Elías</option>
-                                <option value="papas">👨‍👩‍👦 Papás</option>
+                                <!-- Populated by JS -->
                             </select>
                         </div>
                         <div>
@@ -278,24 +293,7 @@
                     <!-- Category Summary -->
                     <div class="mb-6">
                         <h3 class="text-xl font-semibold mb-4 text-gray-800">Resumen</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-md card-hover">
-                                <p class="text-sm text-gray-600 mb-1">🏠 Casa</p>
-                                <p id="cat-casa" class="text-2xl font-bold text-purple-600">$0</p>
-                            </div>
-                            <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-md card-hover">
-                                <p class="text-sm text-gray-600 mb-1">⚡ Servicios</p>
-                                <p id="cat-servicios" class="text-2xl font-bold text-blue-600">$0</p>
-                            </div>
-                            <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-md card-hover">
-                                <p class="text-sm text-gray-600 mb-1">👤 Elías</p>
-                                <p id="cat-elias" class="text-2xl font-bold text-green-600">$0</p>
-                            </div>
-                            <div class="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-md card-hover">
-                                <p class="text-sm text-gray-600 mb-1">👨‍👩‍👦 Papás</p>
-                                <p id="cat-papas" class="text-2xl font-bold text-orange-600">$0</p>
-                            </div>
-                        </div>
+                        <div id="category-summary-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"><!-- Populated by JS --></div>
                     </div>
                 </div>
 
@@ -401,13 +399,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                         <select id="transaction-category" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="">Seleccionar...</option>
-                            <option value="casa">🏠 Casa</option>
-                            <option value="servicios">⚡ Servicios</option>
-                            <option value="elias">👤 Elías</option>
-                            <option value="papas">👨‍👩‍👦 Papás</option>
-                        </select>
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"><!-- Populated by JS --></select>
                     </div>
 
                     <!-- Date -->
@@ -428,13 +420,18 @@
 
                     <!-- Receipt Photo -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Foto del Comprobante *</label>
-                        <input type="file" id="transaction-receipt" accept="image/*" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <p class="text-xs text-gray-500 mt-1">Máximo 1MB</p>
-                        <div id="receipt-preview" class="mt-3 hidden">
-                            <img id="preview-image" class="max-h-48 rounded-lg shadow-md" alt="Preview">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Foto del Comprobante *</label>
+                        <div id="receipt-drop-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg transition hover:border-green-500">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="transaction-receipt" class="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"><span>Sube un archivo</span><input id="transaction-receipt" name="transaction-receipt" type="file" class="sr-only" accept="image/*" required></label>
+                                    <p class="pl-1">o arrástralo aquí</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 1MB</p>
+                            </div>
                         </div>
+                        <div id="receipt-preview" class="mt-3 hidden"></div>
                     </div>
 
                     <!-- Shared Expense -->

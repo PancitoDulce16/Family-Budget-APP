@@ -15,6 +15,7 @@ import {
   getDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { showLoading, showNotification } from './ui.js';
 
 // UI Elements
 const authContainer = document.getElementById('auth-container');
@@ -27,7 +28,6 @@ const emailLoginForm = document.getElementById('email-login-form');
 const emailRegisterForm = document.getElementById('email-register-form');
 const googleLoginBtn = document.getElementById('google-login-btn');
 const logoutBtn = document.getElementById('logout-btn');
-const loading = document.getElementById('loading');
 
 // Toggle between login and register
 showRegisterBtn?.addEventListener('click', () => {
@@ -185,31 +185,6 @@ async function showFamilyGroupSetup(user) {
   showSetup();
 }
 
-// Utility Functions
-function showLoading(show) {
-  if (show) {
-    loading.classList.remove('hidden');
-  } else {
-    loading.classList.add('hidden');
-  }
-}
-
-function showNotification(message, type = 'info') {
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 ${
-    type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-  }`;
-  notification.textContent = message;
-
-  document.body.appendChild(notification);
-
-  // Remove after 3 seconds
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
-}
-
 function getErrorMessage(errorCode) {
   const errors = {
     'auth/email-already-in-use': 'Este email ya está registrado',
@@ -230,5 +205,3 @@ function getErrorMessage(errorCode) {
 export function getCurrentUser() {
   return auth.currentUser;
 }
-
-export { showLoading, showNotification };

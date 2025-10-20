@@ -228,6 +228,12 @@ service cloud.firestore {
     match /budgets/{budgetId} {
       allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == budgetId;
     }
+
+    // Categories
+    // Users can manage categories belonging to their family group.
+    match /categories/{categoryId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyGroupId == resource.data.familyGroupId;
+    }
   }
 }
 ```

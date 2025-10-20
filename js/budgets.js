@@ -1,6 +1,5 @@
 // Budgets Module
 import { db } from './firebase-config.js';
-import { getCurrentUser, showLoading, showNotification } from './auth.js';
 import {
   collection,
   doc,
@@ -8,12 +7,14 @@ import {
   getDoc,
   onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { showLoading, showNotification } from './ui.js';
 
 let budgetsListener = null;
 let currentBudgets = {};
+let customCategories = [];
 
-export function initializeBudgets(familyGroupId) {
-  loadBudgets(familyGroupId);
+export function initializeBudgets(familyGroupId, categories) {
+  loadBudgets(familyGroupId, categories);
 }
 
 function loadBudgets(familyGroupId) {
@@ -26,14 +27,7 @@ function loadBudgets(familyGroupId) {
   budgetsListener = onSnapshot(budgetRef, (doc) => {
     if (doc.exists()) {
       currentBudgets = doc.data();
-    } else {
-      currentBudgets = {
-        casa: 0,
-        servicios: 0,
-        elias: 0,
-        papas: 0
-      };
-    }
+    } // No need for else, empty object is fine
     updateBudgetDisplay();
   });
 }
@@ -58,7 +52,8 @@ export async function saveBudget(familyGroupId, category, amount) {
   }
 }
 
-export function createBudgetWidget(categoryTotals, familyGroupId) {
+export function createBudgetWidget(categoryTotals, familyGroupId, categories) {
+  customCategories = categories;
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
   widget.innerHTML = `
@@ -85,34 +80,27 @@ export function createBudgetWidget(categoryTotals, familyGroupId) {
 }
 
 function updateBudgetBars(container, categoryTotals) {
-  const categories = [
-    { key: 'casa', name: '🏠 Casa', color: 'purple' },
-    { key: 'servicios', name: '⚡ Servicios', color: 'blue' },
-    { key: 'elias', name: '👤 Elías', color: 'green' },
-    { key: 'papas', name: '👨‍👩‍👦 Papás', color: 'orange' }
-  ];
-
   container.innerHTML = '';
 
-  categories.forEach(cat => {
-    const budget = currentBudgets[cat.key] || 0;
-    const spent = categoryTotals[cat.key] || 0;
+  customCategories.forEach(cat => {
+    const budget = currentBudgets[cat.id] || 0;
+    const spent = categoryTotals[cat.id] || 0;
     const percentage = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
     const isOverBudget = spent > budget && budget > 0;
 
-    const barColor = isOverBudget ? 'bg-red-500' : `bg-${cat.color}-500`;
-    const textColor = isOverBudget ? 'text-red-600' : `text-${cat.color}-600`;
+    const barColor = isOverBudget ? 'bg-red-500' : 'bg-green-500';
+    const textColor = isOverBudget ? 'text-red-600' : 'text-gray-600';
 
     const barHTML = `
       <div>
         <div class="flex justify-between items-center mb-2">
           <span class="font-medium text-gray-700">${cat.name}</span>
-          <span class="text-sm ${textColor} font-semibold">
+          <span class="text-sm font-semibold ${textColor}">
             $${spent.toFixed(2)} / $${budget.toFixed(2)}
           </span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-          <div class="${barColor} h-3 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+          <div class="${barColor} h-3 rounded-full transition-all duration-500" style="width: ${percentage}%; background-color: ${isOverBudget ? '' : cat.color};"></div>
         </div>
         ${isOverBudget ? '<p class="text-xs text-red-600 mt-1 font-medium">⚠️ Sobre presupuesto</p>' : ''}
         ${budget === 0 ? '<p class="text-xs text-gray-500 mt-1">Sin presupuesto definido</p>' : ''}
@@ -138,32 +126,8 @@ function openBudgetModal(familyGroupId) {
         <h2 class="text-2xl font-bold text-gray-800">Configurar Presupuestos</h2>
         <button class="close-modal text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
       </div>
-
       <form id="budget-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">🏠 Casa</label>
-          <input type="number" id="budget-casa" step="0.01" value="${currentBudgets.casa || 0}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">⚡ Servicios</label>
-          <input type="number" id="budget-servicios" step="0.01" value="${currentBudgets.servicios || 0}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">👤 Elías</label>
-          <input type="number" id="budget-elias" step="0.01" value="${currentBudgets.elias || 0}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">👨‍👩‍👦 Papás</label>
-          <input type="number" id="budget-papas" step="0.01" value="${currentBudgets.papas || 0}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-        </div>
-
+        <div id="budget-inputs" class="max-h-64 overflow-y-auto pr-2 space-y-4"></div>
         <button type="submit" class="w-full gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition font-bold shadow-lg">
           Guardar Presupuestos
         </button>
@@ -173,6 +137,17 @@ function openBudgetModal(familyGroupId) {
 
   document.body.appendChild(modal);
 
+  const budgetInputsContainer = modal.querySelector('#budget-inputs');
+  customCategories.forEach(cat => {
+    budgetInputsContainer.innerHTML += `
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">${cat.emoji} ${cat.name}</label>
+        <input type="number" data-id="${cat.id}" step="0.01" value="${currentBudgets[cat.id] || 0}"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+      </div>
+    `;
+  });
+
   modal.querySelector('.close-modal').addEventListener('click', () => {
     modal.remove();
   });
@@ -180,15 +155,14 @@ function openBudgetModal(familyGroupId) {
   modal.querySelector('#budget-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const budgets = {
-      casa: parseFloat(document.getElementById('budget-casa').value) || 0,
-      servicios: parseFloat(document.getElementById('budget-servicios').value) || 0,
-      elias: parseFloat(document.getElementById('budget-elias').value) || 0,
-      papas: parseFloat(document.getElementById('budget-papas').value) || 0
-    };
+    const inputs = modal.querySelectorAll('#budget-inputs input');
+    const newBudgets = { ...currentBudgets };
+    inputs.forEach(input => {
+      newBudgets[input.dataset.id] = parseFloat(input.value) || 0;
+    });
 
     const budgetRef = doc(db, 'budgets', familyGroupId);
-    await setDoc(budgetRef, budgets);
+    await setDoc(budgetRef, newBudgets);
 
     showNotification('Presupuestos actualizados', 'success');
     modal.remove();
