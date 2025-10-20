@@ -1,5 +1,4 @@
 // Receipt Gallery Module
-import { getCategoryDetails } from './custom-categories.js';
 export function createReceiptGallery(transactions, customCategories) {
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
@@ -219,4 +218,23 @@ function downloadAllReceipts(transactions) {
   if (confirm(`¿Descargar ${transactions.length} comprobantes? Esto puede tomar unos momentos.`)) {
     downloadNext();
   }
+}
+
+/**
+ * Gets the display properties for a category key.
+ * @param {string} key The category key (ID).
+ * @param {Array} categories The list of available categories.
+ * @returns {object} An object with name, emoji, and color.
+ */
+function getCategoryDetails(key, categories) {
+  const category = categories.find(c => c.id === key);
+  if (category) {
+    return {
+      name: category.name,
+      emoji: category.emoji,
+      color: category.color,
+      displayName: `${category.emoji} ${category.name}`
+    };
+  }
+  return { name: 'Sin Categoría', emoji: '❓', color: '#9CA3AF', displayName: '❓ Sin Categoría' };
 }
