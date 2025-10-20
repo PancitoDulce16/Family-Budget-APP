@@ -23,7 +23,7 @@ import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
 import { initializeGoals } from './goals.js';
 import { showLoading, showNotification, showReceiptModal, showConfirmation } from './ui.js';
-import { formatCurrency } from './utils.js';
+import { formatCurrency, getExchangeRate } from './utils.js';
 import {
   collection,
   doc,
@@ -43,7 +43,7 @@ import {
 // Global variables
 let currentUser = null;
 let userFamilyGroup = null;
-let familyGroupCurrency = 'USD'; // Default currency
+let familyGroupCurrency = 'CRC'; // Default currency
 let familyMembers = [];
 let currentTransactions = [];
 let customCategories = [];
@@ -158,7 +158,7 @@ async function loadUserData() {
       // Load currency from family group
       const groupDoc = await getDoc(doc(db, 'familyGroups', userFamilyGroup));
       if (groupDoc.exists()) {
-        familyGroupCurrency = groupDoc.data().currency || 'USD';
+        familyGroupCurrency = groupDoc.data().currency || 'CRC';
         document.getElementById('app-container').dataset.currency = familyGroupCurrency; // Store globally for other modules
       }
       populatePaidByDropdown();
@@ -540,23 +540,23 @@ async function loadDashboard() {
   });
 }
 
-function updateDashboardStats() {
+async function updateDashboardStats() {
   let totalExpenses = 0;
   let totalIncome = 0;
 
-  // Tasa de cambio fija. Podemos hacerla dinámica en el futuro.
-  const USD_TO_CRC_RATE = 500;
+  const exchangeRate = await getExchangeRate();
 
   currentTransactions.forEach(transaction => {
     let amountInGroupCurrency = transaction.amount;
     const txCurrency = transaction.currency || familyGroupCurrency;
 
     // Convertir a la moneda del grupo si es necesario
-    if (txCurrency !== familyGroupCurrency) {
-      if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
-        amountInGroupCurrency = transaction.amount / USD_TO_CRC_RATE;
-      } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
-        amountInGroupCurrency = transaction.amount * USD_TO_CRC_RATE;
+    if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+      amountInGroupCurrency = transaction.amount * exchangeRate;
+    } else if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+      // Avoid division by zero
+      if (exchangeRate > 0) {
+        amountInGroupCurrency = transaction.amount / exchangeRate;
       }
     }
 

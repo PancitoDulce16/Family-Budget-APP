@@ -158,8 +158,8 @@ export function showFamilyGroupSetup() {
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Moneda del Grupo</label>
               <select id="group-currency" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="CRC">Colón Costarricense (₡)</option>
-                <option value="USD" selected>Dólar Estadounidense ($)</option>
+                <option value="CRC" selected>Colón Costarricense (₡)</option>
+                <option value="USD">Dólar Estadounidense ($)</option>
               </select>
             </div>
             <div class="flex gap-2">

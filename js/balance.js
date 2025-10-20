@@ -1,6 +1,6 @@
 // Balance Module - Calculate who owes whom
 import { db } from './firebase-config.js';
-import { formatCurrency } from './utils.js';
+import { formatCurrency, getExchangeRate } from './utils.js';
 import { collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 let familyMembers = [];
@@ -19,7 +19,7 @@ export async function calculateBalance() {
   // Get currency from app.js or a global state
   const appContainer = document.getElementById('app-container');
   if (appContainer) {
-      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+      familyGroupCurrency = appContainer.dataset.currency || 'CRC';
   }
 
   try {
@@ -47,20 +47,20 @@ export async function calculateBalance() {
       };
     });
 
+    const exchangeRate = await getExchangeRate();
+
     // Calculate balances
     sharedTransactions.forEach(transaction => {
       if (transaction.type !== 'expense') return;
       
-      // Tasa de cambio fija.
-      const USD_TO_CRC_RATE = 500;
       let amountInGroupCurrency = transaction.amount;
       const txCurrency = transaction.currency || familyGroupCurrency;
 
-      if (txCurrency !== familyGroupCurrency) {
-        if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
-          amountInGroupCurrency = transaction.amount / USD_TO_CRC_RATE;
-        } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
-          amountInGroupCurrency = transaction.amount * USD_TO_CRC_RATE;
+      if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+        amountInGroupCurrency = transaction.amount * exchangeRate;
+      } else if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+        if (exchangeRate > 0) {
+          amountInGroupCurrency = transaction.amount / exchangeRate;
         }
       }
 

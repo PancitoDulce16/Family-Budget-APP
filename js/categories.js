@@ -1,7 +1,7 @@
 // Categories Module - Filtered transactions view
 import { db } from './firebase-config.js';
 import { showReceiptModal, showNotification } from './ui.js';
-import { formatCurrency } from './utils.js';
+import { formatCurrency, getExchangeRate } from './utils.js';
 import { collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 let familyMembers = [];
@@ -16,7 +16,7 @@ export function initializeCategories(familyGroupId, members, categories) {
   customCategories = categories;
   const appContainer = document.getElementById('app-container');
   if (appContainer) {
-      familyGroupCurrency = appContainer.dataset.currency || 'USD';
+      familyGroupCurrency = appContainer.dataset.currency || 'CRC';
   }
 
   setupCategoryFilters();
@@ -106,7 +106,7 @@ function applyFilters() {
   updateCategorySummary(filtered);
 }
 
-function displayFilteredTransactions(transactions) {
+async function displayFilteredTransactions(transactions) {
   const container = document.getElementById('filtered-transactions');
   if (!container) return;
 
@@ -154,17 +154,18 @@ function displayFilteredTransactions(transactions) {
     container.appendChild(div);
   });
 
+  const exchangeRate = await getExchangeRate();
+
   // Add total at the end
-  const USD_TO_CRC_RATE = 500;
   const total = expenses.reduce((sum, t) => {
     let amountInGroupCurrency = t.amount;
     const txCurrency = t.currency || familyGroupCurrency;
 
-    if (txCurrency !== familyGroupCurrency) {
-      if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
-        amountInGroupCurrency = t.amount / USD_TO_CRC_RATE;
-      } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
-        amountInGroupCurrency = t.amount * USD_TO_CRC_RATE;
+    if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+      amountInGroupCurrency = t.amount * exchangeRate;
+    } else if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+      if (exchangeRate > 0) {
+        amountInGroupCurrency = t.amount / exchangeRate;
       }
     }
     return sum + amountInGroupCurrency;
@@ -181,26 +182,26 @@ function displayFilteredTransactions(transactions) {
   container.appendChild(totalDiv);
 }
 
-function updateCategorySummary(transactions) {
+async function updateCategorySummary(transactions) {
   const summaryGrid = document.getElementById('category-summary-grid');
   if (!summaryGrid) return;
 
   summaryGrid.innerHTML = '';
   const expenses = transactions.filter(t => t.type === 'expense');
+  const exchangeRate = await getExchangeRate();
 
   customCategories.forEach(cat => {
-    const USD_TO_CRC_RATE = 500;
     const total = expenses
       .filter(t => t.category === cat.id)
       .reduce((sum, t) => {
         let amountInGroupCurrency = t.amount;
         const txCurrency = t.currency || familyGroupCurrency;
 
-        if (txCurrency !== familyGroupCurrency) {
-          if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
-            amountInGroupCurrency = t.amount / USD_TO_CRC_RATE;
-          } else if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
-            amountInGroupCurrency = t.amount * USD_TO_CRC_RATE;
+        if (familyGroupCurrency === 'CRC' && txCurrency === 'USD') {
+          amountInGroupCurrency = t.amount * exchangeRate;
+        } else if (familyGroupCurrency === 'USD' && txCurrency === 'CRC') {
+          if (exchangeRate > 0) {
+            amountInGroupCurrency = t.amount / exchangeRate;
           }
         }
         return sum + amountInGroupCurrency;
