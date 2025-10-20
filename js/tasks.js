@@ -1,6 +1,7 @@
 // Tasks Module
 import { db } from './firebase-config.js';
-import { getCurrentUser, showLoading, showNotification } from './auth.js';
+import { getCurrentUser } from './auth.js';
+import { showLoading, showNotification } from './ui.js';
 import {
   collection,
   addDoc,

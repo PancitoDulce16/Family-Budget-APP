@@ -1,6 +1,6 @@
 // Main Application Module - Complete Enhanced Version
 import { auth, db } from './firebase-config.js';
-import { getCurrentUser, showLoading, showNotification } from './auth.js';
+import { getCurrentUser } from './auth.js';
 import { setupNavigation } from './navigation.js';
 import { initializeTasks } from './tasks.js';
 import { initializeBalance, calculateBalance } from './balance.js';
@@ -20,6 +20,12 @@ import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
 import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
+import { showLoading, showNotification, showReceiptModal } from './ui.js';
+import {
+  initializeDefaultCategories,
+  getCustomCategories,
+  openCategoryManagerModal
+} from './custom-categories.js';
 import {
   collection,
   doc,
@@ -38,6 +44,7 @@ let currentUser = null;
 let userFamilyGroup = null;
 let familyMembers = [];
 let currentTransactions = [];
+let customCategories = [];
 let filteredTransactions = [];
 let expenseChart = null;
 let searchFilters = { query: '', category: '', type: '' };
@@ -64,13 +71,16 @@ window.initializeApp = async (user) => {
   if (userFamilyGroup) {
     setupNavigation();
     setupEventListeners();
+
+    // Initialize and load dynamic categories
+    await initializeDefaultCategories(userFamilyGroup);
+    await loadCustomCategories();
+
     await loadDashboard();
 
     // Initialize all modules
     initializeTasks(userFamilyGroup, familyMembers);
     initializeBalance(userFamilyGroup, familyMembers);
-    initializeCategories(userFamilyGroup, familyMembers);
-    initializeBudgets(userFamilyGroup);
     // Process recurring transactions on startup
     await processRecurringTransactions(userFamilyGroup);
 
@@ -79,11 +89,12 @@ window.initializeApp = async (user) => {
     // Add search bar to dashboard
     addSearchToDashboard();
 
-    // Add export and trends widgets
-    addAnalyticsWidgets();
-
     // Setup view change handler
     window.onViewChange = handleViewChange;
+
+    // Initialize views that depend on categories
+    initializeCategories(userFamilyGroup, familyMembers, customCategories);
+    initializeBudgets(userFamilyGroup, customCategories);
   }
 };
 
@@ -126,6 +137,14 @@ async function loadFamilyMembers() {
   }));
 }
 
+async function loadCustomCategories() {
+  customCategories = await getCustomCategories(userFamilyGroup);
+  // Populate dropdowns that depend on categories
+  populateCategoryDropdown(document.getElementById('transaction-category'));
+  populateCategoryDropdown(document.getElementById('filter-category'), 'Todas');
+  // The search bar categories are populated within its own module
+}
+
 // Add search bar to dashboard
 function addSearchToDashboard() {
   const dashboardView = document.getElementById('dashboard-view');
@@ -134,7 +153,7 @@ function addSearchToDashboard() {
   const searchBar = createSearchBar((filters) => {
     searchFilters = filters;
     applySearchFilters();
-  });
+  }, customCategories);
 
   dashboardView.insertBefore(searchBar, quickActions);
 }
@@ -163,23 +182,16 @@ function updateAnalyticsWidgets() {
   const familyGroupName = userFamilyGroup || 'Mi Familia';
 
   // Calculate category totals
-  const categoryTotals = {
-    casa: 0,
-    servicios: 0,
-    elias: 0,
-    papas: 0
-  };
-
-  currentTransactions.forEach(transaction => {
-    if (transaction.type === 'expense') {
-      if (categoryTotals.hasOwnProperty(transaction.category)) {
-        categoryTotals[transaction.category] += transaction.amount;
-      }
+  const categoryTotals = {};
+  customCategories.forEach(cat => categoryTotals[cat.id] = 0);
+  currentTransactions.filter(t => t.type === 'expense').forEach(t => {
+    if (categoryTotals.hasOwnProperty(t.category)) {
+      categoryTotals[t.category] += t.amount;
     }
   });
 
   // Add export widget
-  const exportWidget = createExportWidget(currentTransactions, familyGroupName, categoryTotals);
+  const exportWidget = createExportWidget(currentTransactions, familyGroupName, categoryTotals, customCategories);
   container.appendChild(exportWidget);
 
   // Add trends chart (if we have transactions)
@@ -215,7 +227,7 @@ async function loadAllTransactionsForTrends() {
   container.appendChild(trendsWidget);
 
   // Add receipt gallery
-  const galleryWidget = createReceiptGallery(allTransactions);
+  const galleryWidget = createReceiptGallery(allTransactions, customCategories);
   container.appendChild(galleryWidget);
 }
 
@@ -238,6 +250,18 @@ function populatePaidByDropdown() {
   });
 
   populateSharedMembers();
+}
+
+// Populate a category dropdown dynamically
+function populateCategoryDropdown(selectElement, allOptionText = 'Seleccionar...') {
+  if (!selectElement) return;
+  selectElement.innerHTML = `<option value="">${allOptionText}</option>`;
+  customCategories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat.id;
+    option.textContent = `${cat.emoji} ${cat.name}`;
+    selectElement.appendChild(option);
+  });
 }
 
 // Populate shared members checkboxes
@@ -278,6 +302,19 @@ function setupEventListeners() {
   addIncomeBtn?.addEventListener('click', () => {
     clearCurrentEditingTransaction();
     openTransactionModal('income');
+  });
+
+  // This button is on the dashboard
+  document.getElementById('dashboard-manage-categories-btn')?.addEventListener('click', () => {
+    openCategoryManagerModal(userFamilyGroup, customCategories, async () => {
+      await loadCustomCategories(); // Refresh categories everywhere
+    });
+  });
+
+  document.getElementById('manage-categories-btn')?.addEventListener('click', () => {
+    openCategoryManagerModal(userFamilyGroup, customCategories, async () => {
+      await loadCustomCategories(); // Refresh categories everywhere
+    });
   });
 
   closeModalBtn?.addEventListener('click', () => {
@@ -602,18 +639,11 @@ function updateRecentActivity() {
 }
 
 function updateExpenseChart() {
-  const categoryTotals = {
-    casa: 0,
-    servicios: 0,
-    elias: 0,
-    papas: 0
-  };
-
-  currentTransactions.forEach(transaction => {
-    if (transaction.type === 'expense') {
-      if (categoryTotals.hasOwnProperty(transaction.category)) {
-        categoryTotals[transaction.category] += transaction.amount;
-      }
+  const categoryTotals = {};
+  customCategories.forEach(cat => categoryTotals[cat.id] = 0);
+  currentTransactions.filter(t => t.type === 'expense').forEach(t => {
+    if (categoryTotals.hasOwnProperty(t.category)) {
+      categoryTotals[t.category] += t.amount;
     }
   });
 
@@ -639,20 +669,10 @@ function updateExpenseChart() {
   expenseChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Casa', 'Servicios', 'Elías', 'Papás'],
+      labels: customCategories.map(c => c.name),
       datasets: [{
-        data: [
-          categoryTotals.casa,
-          categoryTotals.servicios,
-          categoryTotals.elias,
-          categoryTotals.papas
-        ],
-        backgroundColor: [
-          '#9333EA',
-          '#3B82F6',
-          '#10B981',
-          '#F97316'
-        ],
+        data: customCategories.map(c => categoryTotals[c.id] || 0),
+        backgroundColor: customCategories.map(c => c.color),
         borderWidth: 2,
         borderColor: '#ffffff'
       }]
@@ -679,18 +699,11 @@ function updateExpenseChart() {
 }
 
 function updateBudgetWidget() {
-  const categoryTotals = {
-    casa: 0,
-    servicios: 0,
-    elias: 0,
-    papas: 0
-  };
-
-  currentTransactions.forEach(transaction => {
-    if (transaction.type === 'expense') {
-      if (categoryTotals.hasOwnProperty(transaction.category)) {
-        categoryTotals[transaction.category] += transaction.amount;
-      }
+  const categoryTotals = {};
+  customCategories.forEach(cat => categoryTotals[cat.id] = 0);
+  currentTransactions.filter(t => t.type === 'expense').forEach(t => {
+    if (categoryTotals.hasOwnProperty(t.category)) {
+      categoryTotals[t.category] += t.amount;
     }
   });
 
@@ -705,7 +718,7 @@ function updateBudgetWidget() {
   }
 
   budgetContainer.innerHTML = '';
-  const widget = createBudgetWidget(categoryTotals, userFamilyGroup);
+  const widget = createBudgetWidget(categoryTotals, userFamilyGroup, customCategories);
   budgetContainer.appendChild(widget);
 }
 
