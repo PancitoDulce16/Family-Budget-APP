@@ -1,6 +1,7 @@
 // Main Application Module - Complete Enhanced Version
 import { auth, db } from './firebase-config.js';
 import { getCurrentUser } from './auth.js';
+import { DEFAULT_CATEGORIES } from './config.js';
 import { setupNavigation } from './navigation.js';
 import { initializeTasks } from './tasks.js';
 import { initializeBalance, calculateBalance } from './balance.js';
@@ -20,12 +21,7 @@ import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
 import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
-import { showLoading, showNotification, showReceiptModal } from './ui.js';
-import {
-  initializeDefaultCategories,
-  getCustomCategories,
-  openCategoryManagerModal
-} from './custom-categories.js';
+import { showLoading, showNotification, showReceiptModal, showConfirmation } from './ui.js';
 import {
   collection,
   doc,
@@ -36,7 +32,9 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  writeBatch,
+  getCountFromServer
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // Global variables
@@ -729,4 +727,178 @@ function convertFileToBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// --- Custom Categories Logic (Moved from custom-categories.js) ---
+
+/**
+ * Initializes default categories for a family group if they don't exist.
+ * @param {string} familyGroupId The ID of the family group.
+ */
+async function initializeDefaultCategories(familyGroupId) {
+  const categoriesRef = collection(db, 'categories');
+  const q = query(categoriesRef, where('familyGroupId', '==', familyGroupId));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    const batch = writeBatch(db);
+    DEFAULT_CATEGORIES.forEach(category => {
+      const newCategoryRef = doc(collection(db, 'categories'));
+      batch.set(newCategoryRef, { ...category, familyGroupId });
+    });
+    await batch.commit();
+  }
+}
+
+/**
+ * Fetches all custom categories for a family group.
+ * @param {string} familyGroupId The ID of the family group.
+ * @returns {Promise<Array>} A promise that resolves to an array of category objects.
+ */
+async function getCustomCategories(familyGroupId) {
+  const categoriesRef = collection(db, 'categories');
+  const q = query(categoriesRef, where('familyGroupId', '==', familyGroupId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Opens the category management modal.
+ * @param {string} familyGroupId The ID of the family group.
+ * @param {Array} currentCategories The current list of categories.
+ * @param {Function} onUpdate Callback to refresh data.
+ */
+function openCategoryManagerModal(familyGroupId, currentCategories, onUpdate) {
+  const modal = document.createElement('div');
+  modal.id = 'category-manager-modal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Gestionar Categorías</h2>
+        <button class="close-modal text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto pr-2 mb-6">
+        <div id="category-list" class="space-y-3"></div>
+      </div>
+
+      <div class="mt-auto pt-4 border-t">
+        <h3 class="text-lg font-semibold mb-2">Añadir Nueva Categoría</h3>
+        <form id="add-category-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <input type="text" id="new-category-name" placeholder="Nombre" required class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+          <input type="text" id="new-category-emoji" placeholder="Emoji (ej: 🚗)" required maxlength="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+          <input type="color" id="new-category-color" value="#4F46E5" class="w-full h-[50px] border border-gray-300 rounded-lg cursor-pointer">
+          <button type="submit" class="md:col-span-3 w-full gradient-bg text-white py-3 px-4 rounded-lg font-bold">Añadir Categoría</button>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const categoryList = modal.querySelector('#category-list');
+  const addForm = modal.querySelector('#add-category-form');
+
+  const renderCategories = (categories) => {
+    categoryList.innerHTML = '';
+    categories.forEach(cat => {
+      const div = document.createElement('div');
+      div.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-lg';
+      div.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">${cat.emoji}</span>
+          <span class="font-medium">${cat.name}</span>
+          <div class="w-5 h-5 rounded-full" style="background-color: ${cat.color};"></div>
+        </div>
+        <button data-id="${cat.id}" class="delete-category-btn text-red-500 hover:text-red-700 font-bold">&times;</button>
+      `;
+      categoryList.appendChild(div);
+    });
+  };
+
+  renderCategories(currentCategories);
+
+  // Event Listeners
+  modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+
+  addForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = addForm.querySelector('#new-category-name').value;
+    const emoji = addForm.querySelector('#new-category-emoji').value;
+    const color = addForm.querySelector('#new-category-color').value;
+
+    if (!name || !emoji) return;
+
+    try {
+      showLoading(true);
+      const newCategory = { name, emoji, color, familyGroupId };
+      const docRef = await addDoc(collection(db, 'categories'), newCategory);
+      customCategories.push({ id: docRef.id, ...newCategory }); // Update global state
+      renderCategories(customCategories);
+      addForm.reset();
+      onUpdate(); // Notify app to refresh data
+      showNotification('Categoría añadida', 'success');
+    } catch (error) {
+      console.error("Error adding category:", error);
+      showNotification('Error al añadir categoría', 'error');
+    } finally {
+      showLoading(false);
+    }
+  });
+
+  categoryList.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('delete-category-btn')) {
+      const categoryId = e.target.dataset.id;
+      
+      const transactionsQuery = query(collection(db, "transactions"), where("familyGroupId", "==", familyGroupId), where("category", "==", categoryId));
+      const countSnapshot = await getCountFromServer(transactionsQuery);
+      
+      if (countSnapshot.data().count > 0) {
+        showNotification('No se puede eliminar. La categoría está en uso.', 'error');
+        return;
+      }
+
+      const confirmed = await showConfirmation(
+        '¿Eliminar Categoría?',
+        'Esta acción no se puede deshacer.',
+        'Sí, Eliminar'
+      );
+
+      if (confirmed) {
+        try {
+          showLoading(true);
+          await deleteDoc(doc(db, 'categories', categoryId));
+          customCategories = customCategories.filter(c => c.id !== categoryId); // Update global state
+          renderCategories(customCategories);
+          onUpdate(); // Notify app to refresh data
+          showNotification('Categoría eliminada', 'success');
+        } catch (error) {
+          console.error("Error deleting category:", error);
+          showNotification('Error al eliminar categoría', 'error');
+        } finally {
+          showLoading(false);
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Gets the display properties for a category key.
+ * @param {string} key The category key (ID).
+ * @param {Array} categories The list of available categories.
+ * @returns {object} An object with name, emoji, and color.
+ */
+function getCategoryDetails(key, categories) {
+  const category = categories.find(c => c.id === key || c.key === key); // Support old and new keys
+  if (category) {
+    return {
+      name: category.name,
+      emoji: category.emoji,
+      color: category.color,
+      displayName: `${category.emoji} ${category.name}`
+    };
+  }
+  return { name: 'Sin Categoría', emoji: '❓', color: '#9CA3AF', displayName: '❓ Sin Categoría' };
 }
