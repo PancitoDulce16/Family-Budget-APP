@@ -59,22 +59,29 @@ export async function saveBudget(familyGroupId, category, amount) {
   }
 }
 
-export function createBudgetWidget(categoryTotals, familyGroupId, categories) {
+export function createBudgetWidget(categoryTotals, familyGroupId, categories, userRole) {
   customCategories = categories;
   const widget = document.createElement('div');
   widget.className = 'bg-white rounded-2xl shadow-lg p-6 mb-6';
+  const isAdmin = userRole === 'admin';
+
   widget.innerHTML = `
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
         <span>🎯</span>
         Presupuestos Mensuales
       </h3>
+      ${isAdmin ? `
+      <button id="manage-budgets-btn" class="gradient-bg text-white px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold">
+        Configurar
+      </button>
+      ` : ''}
     </div>
     <div class="space-y-4" id="budget-bars"></div>
   `;
 
-  const manageBudgetsBtn = widget.querySelector('#manage-budgets-btn');
-  manageBudgetsBtn.addEventListener('click', () => {
+  // Only add listener if the button exists
+  widget.querySelector('#manage-budgets-btn')?.addEventListener('click', () => {
     openBudgetModal(familyGroupId);
   });
 

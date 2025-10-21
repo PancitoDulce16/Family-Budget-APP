@@ -757,7 +757,7 @@ function updateBudgetWidget() {
 
 
   budgetContainer.innerHTML = '';
-  const widget = createBudgetWidget(categoryTotals, userFamilyGroup, customCategories);
+  const widget = createBudgetWidget(categoryTotals, userFamilyGroup, customCategories, currentUserRole);
   budgetContainer.appendChild(widget);
 }
 
