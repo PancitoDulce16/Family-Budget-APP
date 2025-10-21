@@ -43,7 +43,9 @@ export async function createFamilyGroup(groupName, currency) {
       name: groupName,
       currency: currency,
       createdBy: user.uid,
-      members: [user.uid],
+      roles: {
+        [user.uid]: 'admin' // The creator is the first admin
+      },
       inviteCode: inviteCode,
       createdAt: serverTimestamp()
     });
@@ -89,15 +91,15 @@ export async function joinFamilyGroup(inviteCode) {
     const groupDoc = snapshot.docs[0];
     const groupData = groupDoc.data();
 
-    // Check if user is already a member
-    if (groupData.members.includes(user.uid)) {
+    // Check if user is already a member by checking the roles map
+    if (groupData.roles && groupData.roles[user.uid]) {
       throw new Error('Ya eres miembro de este grupo');
     }
 
-    // Add user to group members
-    const updatedMembers = [...groupData.members, user.uid];
+    // Add user to group members with the 'member' role
+    const updatedMembers = { ...groupData.roles, [user.uid]: 'member' };
     await updateDoc(doc(db, 'familyGroups', groupDoc.id), {
-      members: updatedMembers
+      roles: updatedMembers
     });
 
     // Update user's familyGroupId

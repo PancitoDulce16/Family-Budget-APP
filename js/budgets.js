@@ -69,9 +69,6 @@ export function createBudgetWidget(categoryTotals, familyGroupId, categories) {
         <span>🎯</span>
         Presupuestos Mensuales
       </h3>
-      <button id="manage-budgets-btn" class="gradient-bg text-white px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold">
-        Configurar
-      </button>
     </div>
     <div class="space-y-4" id="budget-bars"></div>
   `;

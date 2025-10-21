@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Budget Manager</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#10B981">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
+    <link rel="apple-touch-icon" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <!-- Auth Container -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-fadeIn">
+            <div class="text-center mb-8">
+                <div class="text-7xl mb-4 animate-bounce">💰</div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                    Family Budget Manager
+                </h1>
+                <p class="text-gray-600">Gestiona tus gastos familiares de forma colaborativa</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Iniciar Sesión</h2>
+                <form id="email-login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="login-email" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <input type="password" id="login-password" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                    </div>
+                    <button type="submit"
+                        class="w-full gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition font-semibold shadow-lg">
+                        Iniciar Sesión
+                    </button>
+                </form>
+
+                <div class="mt-4">
+                    <button id="google-login-btn"
+                        class="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2 font-medium shadow-md">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5">
+                        Continuar con Google
+                    </button>
+                </div>
+
+                <p class="mt-6 text-center text-sm text-gray-600">
+                    ¿No tienes cuenta?
+                    <button id="show-register" class="text-green-600 hover:text-green-700 font-semibold">Regístrate</button>
+                </p>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="hidden">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Crear Cuenta</h2>
+                <form id="email-register-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <input type="text" id="register-name" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="register-email" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <input type="password" id="register-password" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                    </div>
+                    <button type="submit"
+                        class="w-full gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition font-semibold shadow-lg">
+                        Crear Cuenta
+                    </button>
+                </form>
+
+                <p class="mt-6 text-center text-sm text-gray-600">
+                    ¿Ya tienes cuenta?
+                    <button id="show-login" class="text-green-600 hover:text-green-700 font-semibold">Inicia sesión</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app-container" class="hidden min-h-screen flex flex-col">
+        <!-- Navigation -->
+        <nav class="gradient-bg text-white shadow-xl sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <button id="menu-toggle" class="lg:hidden text-white hover:bg-white/20 p-2 rounded-lg transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                        <h1 class="text-xl font-bold flex items-center gap-2">
+                            <span>💰</span>
+                            <span>Family Budget</span>
+                        </h1>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span id="user-name" class="text-sm hidden md:inline font-medium"></span>
+                        <img id="user-photo" class="w-10 h-10 rounded-full border-2 border-white shadow-lg" alt="User">
+                        <button id="logout-btn" class="text-sm hover:bg-white/20 px-3 py-2 rounded-lg transition font-medium">Salir</button>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden lg:flex gap-2 mt-4">
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium active-nav" data-view="dashboard">
+                        📊 Dashboard
+                    </button>
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium" data-view="categories">
+                        📁 Categorías
+                    </button>
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium" data-view="tasks">
+                        ✓ Tareas
+                    </button>
+                    <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium" data-view="balance">
+                        💵 Balance
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-green-700 text-white shadow-lg">
+            <div class="px-4 py-2 space-y-2">
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium active-nav-mobile" data-view="dashboard">
+                    📊 Dashboard
+                </button>
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium" data-view="categories">
+                    📁 Categorías
+                </button>
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium" data-view="tasks">
+                    ✓ Tareas
+                </button>
+                <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium" data-view="balance">
+                    💵 Balance
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view-content animate-fadeIn space-y-6">
+                <!-- Dashboard Tabs -->
+                <div class="bg-white rounded-xl shadow-sm p-2">
+                    <div id="dashboard-tabs" class="flex space-x-2">
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="summary">Resumen</button>
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="analytics">Análisis</button>
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="goals">Metas</button>
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="export">Exportar y Ajustes</button>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button id="add-expense-btn"
+                        class="bg-gradient-to-r from-red-500 to-red-600 text-white py-4 px-6 rounded-2xl hover:shadow-xl transition-all text-lg font-bold shadow-md transform hover:scale-105 flex items-center justify-center gap-3">
+                        <span class="text-3xl">💸</span>
+                        + Añadir Gasto
+                    </button>
+                    <button id="add-income-btn"
+                        class="bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 rounded-2xl hover:shadow-xl transition-all text-lg font-bold shadow-md transform hover:scale-105 flex items-center justify-center gap-3">
+                        <span class="text-3xl">💵</span>
+                        + Añadir Ingreso
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="dashboard-tab-content">
+                    <!-- Summary Tab -->
+                    <div id="summary-tab" class="dashboard-tab-panel space-y-6">
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-red-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-gray-600 font-medium">Gastos del Mes</p>
+                                    <span class="text-3xl">📉</span>
+                                </div>
+                                <p id="total-expenses" class="text-3xl font-bold text-red-600">$0</p>
+                            </div>
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-green-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-gray-600 font-medium">Ingresos del Mes</p>
+                                    <span class="text-3xl">📈</span>
+                                </div>
+                                <p id="total-income" class="text-3xl font-bold text-green-600">$0</p>
+                            </div>
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-blue-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-gray-600 font-medium">Balance</p>
+                                    <span class="text-3xl">💰</span>
+                                </div>
+                                <p id="balance" class="text-3xl font-bold text-blue-600">$0</p>
+                            </div>
+                        </div>
+                        <!-- Chart and Recent Activity -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                                <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                    <span>📊</span>
+                                    Gastos por Categoría (Mes Actual)
+                                </h3>
+                                <canvas id="expense-chart"></canvas>
+                            </div>
+                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                                <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                    <span>🕐</span>
+                                    Actividad Reciente
+                                </h3>
+                                <div id="recent-activity" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Tab -->
+                    <div id="analytics-tab" class="dashboard-tab-panel hidden space-y-6">
+                        <div id="analytics-widgets-container">
+                            <!-- Widgets will be injected here by app.js -->
+                        </div>
+                    </div>
+
+                    <!-- Goals & Budgets Tab -->
+                    <div id="goals-tab" class="dashboard-tab-panel hidden space-y-6">
+                        <!-- Savings Goals Widget -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                <span>🎯</span>
+                                Metas de Ahorro
+                            </h3>
+                            <div id="savings-goals-container" class="space-y-4"></div>
+                        </div>
+                        <!-- Budget Widget -->
+                        <div id="budget-widget-container">
+                            <!-- Budget widget will be injected here by app.js -->
+                        </div>
+                    </div>
+
+                    <!-- Export & Settings Tab -->
+                    <div id="export-tab" class="dashboard-tab-panel hidden space-y-6">
+                        <div id="export-widget-container">
+                            <!-- Export widget will be injected here by app.js -->
+                        </div>
+                        <!-- Settings Widget -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                <span>⚙️</span>
+                                Configuración
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <button id="dashboard-manage-categories-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-4 rounded-xl transition card-hover text-center">
+                                    <div class="text-3xl mb-2">🗂️</div>
+                                    Gestionar Categorías
+                                </button>
+                                <button id="manage-recurring-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-4 rounded-xl transition card-hover text-center">
+                                    <div class="text-3xl mb-2">🔄</div>
+                                    Gastos Recurrentes
+                                </button>
+                                <button id="manage-members-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-4 rounded-xl transition card-hover text-center">
+                                    <div class="text-3xl mb-2">👨‍👩‍👧‍👦</div>
+                                    Gestionar Miembros
+                                </button>
+                                <!-- Add more settings buttons here in the future -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories View -->
+            <div id="categories-view" class="view-content hidden animate-fadeIn">
+                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                            <span>📁</span>
+                            Análisis por Categoría
+                        </h2>
+                        <button id="manage-categories-btn" class="gradient-bg text-white px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold shadow-md text-sm">
+                            Gestionar Categorías
+                        </button>
+                    </div>
+                    <!-- Filters -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                            <select id="filter-category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                            <select id="filter-year" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"></select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mes</label>
+                            <select id="filter-month" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                                <option value="">Todos</option>
+                                <option value="0">Enero</option>
+                                <option value="1">Febrero</option>
+                                <option value="2">Marzo</option>
+                                <option value="3">Abril</option>
+                                <option value="4">Mayo</option>
+                                <option value="5">Junio</option>
+                                <option value="6">Julio</option>
+                                <option value="7">Agosto</option>
+                                <option value="8">Septiembre</option>
+                                <option value="9">Octubre</option>
+                                <option value="10">Noviembre</option>
+                                <option value="11">Diciembre</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Category Summary -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Resumen</h3>
+                        <div id="category-summary-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"><!-- Populated by JS --></div>
+                    </div>
+                </div>
+
+                <!-- Transactions List -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="font-bold text-xl mb-4 text-gray-800">Transacciones</h3>
+                    <div id="filtered-transactions" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- Tasks View -->
+            <div id="tasks-view" class="view-content hidden animate-fadeIn">
+                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                            <span>✓</span>
+                            Tareas y Pagos Pendientes
+                        </h2>
+                        <button id="add-task-btn" class="gradient-bg text-white px-6 py-3 rounded-lg hover:opacity-90 transition font-semibold shadow-lg">
+                            + Nueva Tarea
+                        </button>
+                    </div>
+
+                    <!-- Tasks Lists -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Pending Tasks -->
+                        <div>
+                            <h3 class="font-semibold text-xl mb-4 text-orange-600 flex items-center gap-2">
+                                <span>⏳</span>
+                                Pendientes
+                            </h3>
+                            <div id="pending-tasks" class="space-y-3"></div>
+                        </div>
+
+                        <!-- Completed Tasks -->
+                        <div>
+                            <h3 class="font-semibold text-xl mb-4 text-green-600 flex items-center gap-2">
+                                <span>✅</span>
+                                Completadas
+                            </h3>
+                            <div id="completed-tasks" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance View -->
+            <div id="balance-view" class="view-content hidden animate-fadeIn">
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-800 flex items-center gap-3">
+                        <span>💵</span>
+                        Balance entre Miembros
+                    </h2>
+                    <p class="text-gray-600 mb-6">Quién le debe a quién basado en los gastos compartidos</p>
+
+                    <div id="member-balance-detailed" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="transaction-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="modal-title" class="text-2xl font-bold text-gray-800">Añadir Transacción</h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                </div>
+
+                <form id="transaction-form" class="space-y-4">
+                    <!-- Type Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                        <div class="flex gap-4">
+                            <button type="button" data-type="expense"
+                                class="type-btn flex-1 py-3 px-4 rounded-lg border-2 border-red-500 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition">
+                                💸 Gasto
+                            </button>
+                            <button type="button" data-type="income"
+                                class="type-btn flex-1 py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-600 font-semibold hover:bg-gray-50 transition">
+                                💵 Ingreso
+                            </button>
+                        </div>
+                        <input type="hidden" id="transaction-type" value="expense">
+                    </div>
+
+                    <!-- OCR Scan Button -->
+                    <div>
+                        <button type="button" id="scan-receipt-btn" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 border-dashed border-gray-400 text-gray-600 font-semibold hover:border-green-500 hover:text-green-600 transition">
+                            <span>📸</span> Escanear Comprobante con la Cámara
+                        </button>
+                    </div>
+
+                    <!-- Amount and Currency -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+                            <input type="number" id="transaction-amount" step="0.01" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+                            <select id="transaction-currency" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="CRC">₡ CRC</option>
+                                <option value="USD" selected>$ USD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <input type="text" id="transaction-description" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                        <select id="transaction-category" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"><!-- Populated by JS --></select>
+                    </div>
+
+                    <!-- Date -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                        <input type="date" id="transaction-date" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+
+                    <!-- Paid By -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pagado por</label>
+                        <select id="transaction-paidby" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+
+                    <!-- Receipt Photo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Foto del Comprobante (Opcional)</label>
+                        <div id="receipt-drop-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg transition hover:border-green-500">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="transaction-receipt" class="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"><span>Sube un archivo</span><input id="transaction-receipt" name="transaction-receipt" type="file" class="sr-only" accept="image/*"></label>
+                                    <p class="pl-1">o arrástralo aquí</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 1MB</p>
+                            </div>
+                        </div>
+                        <div id="receipt-preview" class="mt-3 hidden"></div>
+                    </div>
+
+                    <!-- Shared Expense -->
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="transaction-shared"
+                                class="w-5 h-5 text-green-600 rounded focus:ring-green-500">
+                            <span class="text-sm font-medium text-gray-700">¿Es un gasto compartido?</span>
+                        </label>
+                    </div>
+
+                    <!-- Shared Options -->
+                    <div id="shared-options" class="hidden space-y-2 bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm font-medium text-gray-700">Dividir entre:</p>
+                        <div id="shared-members"></div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit"
+                        class="w-full gradient-bg text-white py-4 px-4 rounded-lg hover:opacity-90 transition font-bold text-lg shadow-lg">
+                        Guardar Transacción
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-fadeIn">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Nueva Tarea</h2>
+                    <button id="close-task-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                </div>
+
+                <form id="task-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                        <input type="text" id="task-title" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Asignar a</label>
+                        <select id="task-assigned" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha límite</label>
+                        <input type="date" id="task-duedate" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+
+                    <button type="submit"
+                        class="w-full gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition font-bold shadow-lg">
+                        Crear Tarea
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring Transactions Modal -->
+    <div id="recurring-transactions-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col animate-fadeIn">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">Gestionar Transacciones Recurrentes</h2>
+                    <button id="close-recurring-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                </div>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Add new recurring transaction form -->
+                <div class="border-r-0 md:border-r pr-0 md:pr-6">
+                    <h3 class="text-xl font-semibold mb-4">Añadir Nueva</h3>
+                    <form id="recurring-transaction-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                            <input type="text" id="recurring-description" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+                                <input type="number" id="recurring-amount" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+                                <select id="recurring-currency" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="CRC">₡ CRC</option>
+                                    <option value="USD">$ USD</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                            <select id="recurring-category" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Frecuencia</label>
+                                <select id="recurring-frequency" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="monthly">Mensual</option>
+                                    <option value="weekly">Semanal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Próximo Pago</label>
+                                <input type="date" id="recurring-start-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+                        <!-- Shared Expense for Recurring -->
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="recurring-transaction-shared" class="w-5 h-5 text-green-600 rounded focus:ring-green-500">
+                                <span class="text-sm font-medium text-gray-700">¿Es un gasto compartido?</span>
+                            </label>
+                        </div>
+                        <!-- Shared Options for Recurring -->
+                        <div id="recurring-shared-options" class="hidden space-y-2 bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm font-medium text-gray-700">Dividir entre:</p>
+                            <div id="recurring-shared-members"></div>
+                        </div>
+
+                        <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-bold">Añadir Gasto Recurrente</button>
+                    </form>
+                </div>
+                <!-- List of existing recurring transactions -->
+                <div id="recurring-transactions-list-container">
+                    <h3 class="text-xl font-semibold mb-4">Existentes</h3>
+                    <div id="recurring-transactions-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Members Modal -->
+    <div id="manage-members-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col animate-fadeIn">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">Gestionar Miembros del Grupo</h2>
+                    <button id="close-members-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                </div>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <p class="text-sm text-gray-600 mb-4">Cambia el rol de cada miembro para controlar sus permisos.</p>
+                <div id="members-list" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 shadow-2xl">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto"></div>
+            <p class="mt-4 text-gray-700 font-semibold">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/navigation.js"></script>
+    <script type="module" src="js/tasks.js"></script>
+    <script type="module" src="js/balance.js"></script>
+    <script type="module" src="js/categories.js"></script>
+    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/goals.js"></script>
+</body>
+</html>

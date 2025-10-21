@@ -13,7 +13,9 @@ import {
   getCurrentEditingTransaction,
   clearCurrentEditingTransaction,
   createTransactionActions,
-  processRecurringTransactions
+  processRecurringTransactions,
+  openRecurringTransactionsManager,
+  openMembersManager
 } from './transactions.js';
 import { createSearchBar, filterTransactions } from './search.js';
 import { initializeBudgets, createBudgetWidget, getCurrentBudgets } from './budgets.js';
@@ -21,6 +23,7 @@ import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
 import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
+import { initializeOCR } from './ocr.js';
 import { initializeGoals } from './goals.js';
 import { showLoading, showNotification, showReceiptModal, showConfirmation } from './ui.js';
 import { formatCurrency, getExchangeRate } from './utils.js';
@@ -44,6 +47,7 @@ import {
 let currentUser = null;
 let userFamilyGroup = null;
 let familyGroupCurrency = 'CRC'; // Default currency
+let currentUserRole = null; // To store the user's role ('admin', 'member', 'viewer')
 let familyMembers = [];
 let currentTransactions = [];
 let customCategories = [];
@@ -89,6 +93,7 @@ window.initializeApp = async (user) => {
     await processRecurringTransactions(userFamilyGroup);
 
     initializeDarkMode();
+    initializeOCR();
 
 
     // Load historical data for analytics widgets once
@@ -159,7 +164,12 @@ async function loadUserData() {
       const groupDoc = await getDoc(doc(db, 'familyGroups', userFamilyGroup));
       if (groupDoc.exists()) {
         familyGroupCurrency = groupDoc.data().currency || 'CRC';
+        const roles = groupDoc.data().roles || {};
+        currentUserRole = roles[currentUser.uid] || 'viewer'; // Default to viewer if not found
         document.getElementById('app-container').dataset.currency = familyGroupCurrency; // Store globally for other modules
+
+        // Control UI based on role
+        updateUIForRole();
       }
       populatePaidByDropdown();
     }
@@ -169,8 +179,10 @@ async function loadUserData() {
 // Load family members
 async function loadFamilyMembers() {
   const membersQuery = query(
-    collection(db, 'users'),
-    where('familyGroupId', '==', userFamilyGroup)
+    collection(db, 'users'), 
+    // This query is tricky with roles. We'll fetch the group doc first.
+    // For now, let's assume familyGroupId is still on the user doc.
+    where('familyGroupId', '==', userFamilyGroup) 
   );
 
   const snapshot = await getDocs(membersQuery);
@@ -178,6 +190,21 @@ async function loadFamilyMembers() {
     id: doc.id,
     ...doc.data()
   }));
+}
+
+function updateUIForRole() {
+  const isAdmin = currentUserRole === 'admin';
+
+  // Buttons that only admins should see
+  const adminOnlyButtons = [
+    document.getElementById('dashboard-manage-categories-btn'),
+    document.getElementById('manage-categories-btn'),
+    document.getElementById('manage-recurring-btn'),
+    document.querySelector('#budget-widget-container button'), // Manage budgets button
+    document.getElementById('manage-members-btn')
+  ];
+
+  adminOnlyButtons.forEach(btn => btn?.classList.toggle('hidden', !isAdmin));
 }
 
 async function loadCustomCategories() {
@@ -297,6 +324,14 @@ function setupEventListeners() {
     openCategoryManagerModal(userFamilyGroup, customCategories, async () => {
       await loadCustomCategories(); // Refresh categories everywhere
     });
+  });
+
+  document.getElementById('manage-recurring-btn')?.addEventListener('click', () => {
+    openRecurringTransactionsManager(userFamilyGroup, customCategories, familyMembers);
+  });
+
+  document.getElementById('manage-members-btn')?.addEventListener('click', () => {
+    openMembersManager(userFamilyGroup, familyMembers, currentUser.uid);
   });
 
   closeModalBtn?.addEventListener('click', () => {
