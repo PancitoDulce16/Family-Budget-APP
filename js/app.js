@@ -556,13 +556,13 @@ async function loadDashboard() {
     where('date', '<=', monthEnd),
     orderBy('date', 'desc')
   );
-
+  
   onSnapshot(transactionsQuery, (snapshot) => {
     currentTransactions = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-
+    
     filteredTransactions = currentTransactions;
     applySearchFilters();
 
@@ -570,7 +570,6 @@ async function loadDashboard() {
     updateRecentActivity();
     updateExpenseChart();
     updateBudgetWidget();
-    updateAnalyticsWidgets();
     calculateBalance();
   });
 }
@@ -926,11 +925,13 @@ function openCategoryManagerModal(familyGroupId, currentCategories, onUpdate) {
 }
 
 async function updateAnalyticsWidgets() {
-    const container = document.getElementById('analytics-widgets-container');
-    if (!container) return;
+    const analyticsContainer = document.getElementById('analytics-tab');
+    const exportContainer = document.getElementById('export-widget-container');
+    if (!analyticsContainer || !exportContainer) return;
 
     // Clear existing widgets
-    container.innerHTML = '';
+    analyticsContainer.innerHTML = '';
+    exportContainer.innerHTML = '';
 
     // Fetch all transactions for analytics
     const allTransactionsQuery = query(
@@ -952,19 +953,19 @@ async function updateAnalyticsWidgets() {
 
     // Add export widget
     const exportWidget = createExportWidget(allTransactions, userFamilyGroup || 'Mi Familia', categoryTotals, customCategories);
-    container.appendChild(exportWidget);
+    exportContainer.appendChild(exportWidget);
 
     // Add comparison widget
     const comparisonWidget = createComparisonWidget(allTransactions);
-    container.appendChild(comparisonWidget);
+    analyticsContainer.appendChild(comparisonWidget);
 
     // Add trends chart
     const trendsWidget = createTrendsChart(allTransactions);
-    container.appendChild(trendsWidget);
+    analyticsContainer.appendChild(trendsWidget);
 
     // Add receipt gallery
     const galleryWidget = createReceiptGallery(allTransactions, customCategories);
-    container.appendChild(galleryWidget);
+    analyticsContainer.appendChild(galleryWidget);
 }
 
 /**
