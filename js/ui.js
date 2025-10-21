@@ -1,13 +1,21 @@
 // UI Utilities Module
 
 const loadingSpinner = document.getElementById('loading');
+let loadingMessageElement = null;
 
 /**
  * Shows or hides the global loading spinner.
  * @param {boolean} show True to show, false to hide.
+ * @param {string} [message='Cargando...'] Optional message to display.
  */
-export function showLoading(show) {
+export function showLoading(show, message = 'Cargando...') {
   if (loadingSpinner) {
+    if (!loadingMessageElement) {
+      loadingMessageElement = loadingSpinner.querySelector('p');
+    }
+    if (loadingMessageElement) {
+      loadingMessageElement.textContent = message;
+    }
     loadingSpinner.classList.toggle('hidden', !show);
   }
 }
@@ -18,59 +26,43 @@ export function showLoading(show) {
  * @param {'info' | 'success' | 'error'} type The type of notification.
  */
 export function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  const colors = {
-    success: 'bg-green-500',
-    error: 'bg-red-500',
-    info: 'bg-blue-500'
-  };
-  notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 animate-fadeIn ${colors[type]}`;
-  notification.textContent = message;
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
 
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
+  Toast.fire({
+    icon: type,
+    title: message
+  });
 }
 
 /**
  * Shows a custom confirmation modal.
  * @param {string} title The title of the modal.
  * @param {string} message The message to display.
- * @param {string} confirmText The text for the confirmation button.
+ * @param {string} [confirmText='Confirmar'] The text for the confirmation button.
  * @returns {Promise<boolean>} A promise that resolves to true if confirmed, false otherwise.
  */
-export function showConfirmation(title, message, confirmText = 'Confirmar') {
-  return new Promise((resolve) => {
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn';
-    modal.innerHTML = `
-      <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-        <div class="text-5xl mb-4">🤔</div>
-        <h3 class="text-xl font-bold text-gray-800 mb-2">${title}</h3>
-        <p class="text-gray-600 mb-6">${message}</p>
-        <div class="flex gap-4">
-          <button class="confirm-cancel flex-1 py-3 px-4 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition font-semibold">
-            Cancelar
-          </button>
-          <button class="confirm-accept flex-1 py-3 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-semibold">
-            ${confirmText}
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    const closeModal = (result) => {
-      modal.remove();
-      resolve(result);
-    };
-
-    modal.querySelector('.confirm-accept').addEventListener('click', () => closeModal(true));
-    modal.querySelector('.confirm-cancel').addEventListener('click', () => closeModal(false));
+export async function showConfirmation(title, message, confirmText = 'Confirmar') {
+  const result = await Swal.fire({
+    title: title,
+    text: message,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: confirmText,
+    cancelButtonText: 'Cancelar'
   });
+  return result.isConfirmed;
 }
 
 /**

@@ -1,0 +1,47 @@
+/* Print-specific Stylesheet */
+
+@media print {
+    /* Ocultar todo por defecto */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Mostrar solo el contenido de la pestaña de análisis y sus hijos */
+    #analytics-tab, #analytics-tab * {
+        visibility: visible;
+    }
+
+    /* Asegurarse de que el contenedor principal sea visible */
+    #app-container, #app-container * {
+        visibility: visible;
+    }
+
+    /* Ocultar elementos no deseados dentro del contenedor principal */
+    nav, #dashboard-tabs, #menu-toggle, .nav-btn, .nav-btn-mobile, #add-expense-btn, #add-income-btn, .dashboard-tab-btn, #export-widget-container button, #manage-budgets-btn, #manage-members-btn, #dashboard-manage-categories-btn {
+        display: none !important;
+    }
+
+    /* Ajustes de layout para impresión */
+    body {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+
+    #analytics-tab {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    .bg-white, .bg-gradient-to-br {
+        background: #fff !important;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+
+    /* Evitar que los gráficos se corten entre páginas */
+    .bg-white.rounded-2xl.shadow-lg {
+        page-break-inside: avoid;
+    }
+}

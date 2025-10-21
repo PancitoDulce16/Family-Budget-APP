@@ -59,6 +59,9 @@ export function toggleDarkMode() {
   if (icon) {
     icon.textContent = isDarkMode ? '☀️' : '🌙';
   }
+
+  // Dispatch a custom event to notify other modules (like charts)
+  window.dispatchEvent(new CustomEvent('themeChanged'));
 }
 
 function enableDarkMode() {
@@ -66,16 +69,16 @@ function enableDarkMode() {
   applyDarkStyles();
 }
 
+function disableDarkMode() {
+  document.documentElement.classList.remove('dark');
+  removeDarkStyles();
+}
+
 function removeDarkStyles() {
   const style = document.getElementById('dark-mode-styles');
   if (style) {
     style.remove();
   }
-}
-
-function disableDarkMode() {
-  document.documentElement.classList.remove('dark');
-  removeDarkStyles();
 }
 
 function applyDarkStyles() {

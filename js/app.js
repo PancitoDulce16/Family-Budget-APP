@@ -12,19 +12,25 @@ import {
   openEditModal,
   getCurrentEditingTransaction,
   clearCurrentEditingTransaction,
-  createTransactionActions,
-  processRecurringTransactions,  
-  openRecurringTransactionsManager
+  createTransactionActions
 } from './transactions.js';
 import { createSearchBar, filterTransactions } from './search.js';
 import { openMembersManager } from './family-group.js';
+import { openCategoryManagerModal } from './categories-manager.js';
+import { openRecurringTransactionsManager } from './recurring.js';
 import { initializeBudgets, createBudgetWidget, getCurrentBudgets } from './budgets.js';
 import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
 import { initializeDarkMode } from './dark-mode.js';
 import { createReceiptGallery } from './receipt-gallery.js';
-import { initializeOCR } from './ocr.js';
+import { initializeConnectivityStatus } from './connectivity.js';
+import { initializeOCR } from './ocr.js'; // Asegurarse que este archivo exista
 import { initializeGoals } from './goals.js';
+import { startTourIfNeeded } from './tour.js'; 
+import { exportBackup, importBackup } from './backup.js';
+import { initializePinLock, openPinSetup, removePin, isPinSet } from './pin-lock.js';
+import { initializeShortcuts } from './shortcuts.js';
+import { initializePushNotifications } from './notifications.js';
 import { showLoading, showNotification, showReceiptModal, showConfirmation } from './ui.js';
 import { formatCurrency, getExchangeRate } from './utils.js';
 import {
@@ -43,6 +49,7 @@ import {
   onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
+
 // Global variables
 let currentUser = null;
 let userFamilyGroup = null;
@@ -54,6 +61,7 @@ let customCategories = [];
 let filteredTransactions = [];
 let expenseChart = null;
 let searchFilters = { query: '', category: '', type: '' };
+let transactionsListener = null; // To unsubscribe on logout
 
 // UI Elements
 const addExpenseBtn = document.getElementById('add-expense-btn');
@@ -71,6 +79,15 @@ const receiptPreviewContainer = document.getElementById('receipt-preview');
 
 // Initialize app
 window.initializeApp = async (user) => {
+  // First, check for PIN lock
+  await initializePinLock();
+
+  // Cleanup previous listeners if re-initializing
+  if (transactionsListener) {
+    transactionsListener();
+    transactionsListener = null;
+  }
+
   currentUser = user;
   await loadUserData();
 
@@ -89,11 +106,14 @@ window.initializeApp = async (user) => {
     initializeTasks(userFamilyGroup, familyMembers);
     initializeBalance(userFamilyGroup, familyMembers);
 
-    // Process recurring transactions on startup
-    await processRecurringTransactions(userFamilyGroup);
+    // Initialize Push Notifications
+    await initializePushNotifications(currentUser.uid);
 
     initializeDarkMode();
     initializeOCR();
+    initializeConnectivityStatus();
+    initializeShortcuts();
+    startTourIfNeeded();
 
 
     // Load historical data for analytics widgets once
@@ -102,6 +122,10 @@ window.initializeApp = async (user) => {
 
     // Setup view change handler
     window.onViewChange = handleViewChange;
+    handleViewChange('dashboard'); // Initial call
+
+    // Listen for theme changes to redraw charts
+    window.addEventListener('themeChanged', updateAnalyticsWidgets);
 
     // Add search bar to dashboard
     addSearchToDashboard();
@@ -147,6 +171,8 @@ function handleViewChange(viewName) {
     refreshCategories();
   } else if (viewName === 'dashboard') {
     updateBudgetWidget();
+    // Load activity log when dashboard is shown
+    loadActivityLog();
   }
 }
 
@@ -342,6 +368,21 @@ function setupEventListeners() {
   document.getElementById('manage-members-btn')?.addEventListener('click', () => {
     openMembersManager(userFamilyGroup, familyMembers, currentUser.uid);
   });
+
+  document.getElementById('create-backup-btn')?.addEventListener('click', () => {
+    const groupName = familyMembers.length > 0 ? document.querySelector('#app-container h1 span:last-child').textContent : 'MiPresupuesto';
+    exportBackup(userFamilyGroup, groupName);
+  });
+
+  document.getElementById('import-backup-input')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      importBackup(userFamilyGroup, file);
+    }
+  });
+
+  updatePinButtons();
+
 
   closeModalBtn?.addEventListener('click', () => {
     clearCurrentEditingTransaction();
@@ -551,6 +592,33 @@ async function handleTransactionSubmit(e) {
   }
 }
 
+function updatePinButtons() {
+  const settingsContainer = document.querySelector('#export-tab .grid.grid-cols-1.md\\:grid-cols-3');
+  if (!settingsContainer) return;
+
+  // Remove existing PIN buttons to avoid duplication
+  settingsContainer.querySelector('#pin-setup-btn')?.remove();
+  settingsContainer.querySelector('#pin-remove-btn')?.remove();
+
+  if (isPinSet()) {
+    // Show 'Remove PIN' button
+    const removePinButton = document.createElement('button');
+    removePinButton.id = 'pin-remove-btn';
+    removePinButton.className = 'bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-4 px-4 rounded-xl transition card-hover text-center';
+    removePinButton.innerHTML = `<div class="text-3xl mb-2">🔓</div>Eliminar PIN`;
+    removePinButton.onclick = () => { removePin(); updatePinButtons(); };
+    settingsContainer.appendChild(removePinButton);
+  } else {
+    // Show 'Setup PIN' button
+    const setupPinButton = document.createElement('button');
+    setupPinButton.id = 'pin-setup-btn';
+    setupPinButton.className = 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-4 rounded-xl transition card-hover text-center';
+    setupPinButton.innerHTML = `<div class="text-3xl mb-2">🔐</div>Configurar PIN`;
+    setupPinButton.onclick = () => { openPinSetup(); setTimeout(updatePinButtons, 100); }; // Update buttons after setup
+    settingsContainer.appendChild(setupPinButton);
+  }
+}
+
 async function loadDashboard() {
   if (!userFamilyGroup) return;
 
@@ -566,10 +634,11 @@ async function loadDashboard() {
     orderBy('date', 'desc')
   );
   
-  onSnapshot(transactionsQuery, (snapshot) => {
+  transactionsListener = onSnapshot(transactionsQuery, (snapshot) => {
     currentTransactions = snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      hasPendingWrites: doc.metadata.hasPendingWrites
     }));
     
     filteredTransactions = currentTransactions;
@@ -655,6 +724,7 @@ function updateRecentActivity() {
     div.className = 'border-b pb-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition';
     div.innerHTML = `
       <div class="flex justify-between items-start">
+        ${transaction.hasPendingWrites ? '<span class="text-xs text-gray-400 mr-2" title="Sincronizando...">⏳</span>' : ''}
         <div class="flex-1">
           <p class="font-medium text-sm">${transaction.description}</p>
           <p class="text-xs text-gray-500">${memberName} - ${transaction.category}</p>
@@ -811,128 +881,6 @@ async function getCustomCategories(familyGroupId) {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-/**
- * Opens the category management modal.
- * @param {string} familyGroupId The ID of the family group.
- * @param {Array} currentCategories The current list of categories.
- * @param {Function} onUpdate Callback to refresh data.
- */
-function openCategoryManagerModal(familyGroupId, currentCategories, onUpdate) {
-  const modal = document.createElement('div');
-  modal.id = 'category-manager-modal';
-  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn';
-  modal.innerHTML = `
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] flex flex-col">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Gestionar Categorías</h2>
-        <button class="close-modal text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
-      </div>
-      
-      <div class="flex-1 overflow-y-auto pr-2 mb-6">
-        <div id="category-list" class="space-y-3"></div>
-      </div>
-
-      <div class="mt-auto pt-4 border-t">
-        <h3 class="text-lg font-semibold mb-2">Añadir Nueva Categoría</h3>
-        <form id="add-category-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <input type="text" id="new-category-name" placeholder="Nombre" required class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-          <input type="text" id="new-category-emoji" placeholder="Emoji (ej: 🚗)" required maxlength="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-          <input type="color" id="new-category-color" value="#4F46E5" class="w-full h-[50px] border border-gray-300 rounded-lg cursor-pointer">
-          <button type="submit" class="md:col-span-3 w-full gradient-bg text-white py-3 px-4 rounded-lg font-bold">Añadir Categoría</button>
-        </form>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const categoryList = modal.querySelector('#category-list');
-  const addForm = modal.querySelector('#add-category-form');
-
-  const renderCategories = (categories) => {
-    categoryList.innerHTML = '';
-    categories.forEach(cat => {
-      const div = document.createElement('div');
-      div.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-lg';
-      div.innerHTML = `
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">${cat.emoji}</span>
-          <span class="font-medium">${cat.name}</span>
-          <div class="w-5 h-5 rounded-full" style="background-color: ${cat.color};"></div>
-        </div>
-        <button data-id="${cat.id}" class="delete-category-btn text-red-500 hover:text-red-700 font-bold">&times;</button>
-      `;
-      categoryList.appendChild(div);
-    });
-  };
-
-  renderCategories(currentCategories);
-
-  // Event Listeners
-  modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
-
-  addForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = addForm.querySelector('#new-category-name').value;
-    const emoji = addForm.querySelector('#new-category-emoji').value;
-    const color = addForm.querySelector('#new-category-color').value;
-
-    if (!name || !emoji) return;
-
-    try {
-      showLoading(true);
-      const newCategory = { name, emoji, color, familyGroupId };
-      const docRef = await addDoc(collection(db, 'categories'), newCategory);
-      customCategories.push({ id: docRef.id, ...newCategory }); // Update global state
-      renderCategories(customCategories);
-      addForm.reset();
-      onUpdate(); // Notify app to refresh data
-      showNotification('Categoría añadida', 'success');
-    } catch (error) {
-      console.error("Error adding category:", error);
-      showNotification('Error al añadir categoría', 'error');
-    } finally {
-      showLoading(false);
-    }
-  });
-
-  categoryList.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('delete-category-btn')) {
-      const categoryId = e.target.dataset.id;
-      
-      const transactionsQuery = query(collection(db, "transactions"), where("familyGroupId", "==", familyGroupId), where("category", "==", categoryId));
-      const countSnapshot = await getCountFromServer(transactionsQuery);
-      
-      if (countSnapshot.data().count > 0) {
-        showNotification('No se puede eliminar. La categoría está en uso.', 'error');
-        return;
-      }
-
-      const confirmed = await showConfirmation(
-        '¿Eliminar Categoría?',
-        'Esta acción no se puede deshacer.',
-        'Sí, Eliminar'
-      );
-
-      if (confirmed) {
-        try {
-          showLoading(true);
-          await deleteDoc(doc(db, 'categories', categoryId));
-          customCategories = customCategories.filter(c => c.id !== categoryId); // Update global state
-          renderCategories(customCategories);
-          onUpdate(); // Notify app to refresh data
-          showNotification('Categoría eliminada', 'success');
-        } catch (error) {
-          console.error("Error deleting category:", error);
-          showNotification('Error al eliminar categoría', 'error');
-        } finally {
-          showLoading(false);
-        }
-      }
-    }
-  });
-}
-
 async function updateAnalyticsWidgets() {
     const analyticsContainer = document.getElementById('analytics-tab');
     const exportContainer = document.getElementById('export-widget-container');
@@ -994,4 +942,41 @@ function getCategoryDetails(key, categories) {
     };
   }
   return { name: 'Sin Categoría', emoji: '❓', color: '#9CA3AF', displayName: '❓ Sin Categoría' };
+}
+
+async function loadActivityLog() {
+    const container = document.getElementById('activity-tab');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                <span>📜</span>
+                Registro de Actividad del Grupo
+            </h3>
+            <div id="activity-log-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <p class="text-gray-500">Cargando actividad...</p>
+            </div>
+        </div>
+    `;
+
+    const logQuery = query(
+        collection(db, 'activityLog'),
+        where('familyGroupId', '==', userFamilyGroup),
+        orderBy('timestamp', 'desc'),
+        limit(50) // Get last 50 activities
+    );
+
+    onSnapshot(logQuery, (snapshot) => {
+        const listEl = document.getElementById('activity-log-list');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        snapshot.forEach(doc => {
+            const log = doc.data();
+            const date = log.timestamp.toDate().toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+            const logItem = `<div class="flex items-start gap-3"><div class="bg-gray-200 rounded-full p-2 mt-1">${log.userName.charAt(0)}</div><div><p class="text-sm"><span class="font-semibold">${log.userName}</span> ${log.action}</p><p class="text-xs text-gray-500">${date}</p></div></div>`;
+            listEl.insertAdjacentHTML('beforeend', logItem);
+        });
+    });
 }

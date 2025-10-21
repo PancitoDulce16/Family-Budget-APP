@@ -2,6 +2,7 @@
 import { db } from './firebase-config.js';
 import { getCurrentUser } from './auth.js';
 import { showLoading, showNotification } from './ui.js';
+import { logActivity } from './activity-log.js';
 import {
   collection,
   doc,
@@ -106,6 +107,9 @@ export async function joinFamilyGroup(inviteCode) {
     await updateDoc(doc(db, 'users', user.uid), {
       familyGroupId: groupDoc.id
     });
+
+    // Log this activity
+    await logActivity(groupDoc.id, user.uid, user.displayName, 'se unió al grupo');
 
     showNotification('Te has unido al grupo familiar', 'success');
     return groupDoc.id;
@@ -350,6 +354,9 @@ export async function openMembersManager(familyGroupId, members, currentUserId) 
         await updateDoc(groupRef, {
           [`roles.${memberId}`]: newRole
         });
+        const performingUser = getCurrentUser();
+        const targetMemberName = members.find(m => m.id === memberId).displayName;
+        await logActivity(familyGroupId, performingUser.uid, performingUser.displayName, `cambió el rol de ${targetMemberName} a ${newRole}.`);
         showNotification(`Rol de ${members.find(m => m.id === memberId).displayName} actualizado a ${newRole}.`, 'success');
       } catch (error) {
         console.error("Error updating role:", error);

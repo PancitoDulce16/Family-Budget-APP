@@ -1,142 +1,104 @@
-// OCR Module for Receipt Scanning
+// OCR Module using Tesseract.js
 import { showLoading, showNotification } from './ui.js';
+import { populateTransactionFormWithOCR, handleFileDrop } from './transactions.js';
 
+/**
+ * Initializes the OCR functionality by adding an event listener to the scan button.
+ */
 export function initializeOCR() {
-  const scanButton = document.getElementById('scan-receipt-btn');
-  scanButton?.addEventListener('click', startScan);
-}
+  const scanCameraBtn = document.getElementById('scan-receipt-camera-btn');
+  const scanFileBtn = document.getElementById('scan-receipt-file-btn');
+  const receiptInput = document.getElementById('transaction-receipt');
 
-function startScan() {
-  // Create a hidden file input to trigger the camera
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'image/*';
-  fileInput.capture = 'environment'; // Prioritize back camera
+  scanFileBtn?.addEventListener('click', () => {
+    // Trigger the hidden file input
+    receiptInput.click();
+  });
 
-  fileInput.onchange = (e) => {
+  scanCameraBtn?.addEventListener('click', () => {
+    // Trigger the hidden file input with camera capture
+    receiptInput.setAttribute('capture', 'environment'); // 'environment' for back camera
+    receiptInput.click();
+  });
+
+  // Listen for file selection to process it with OCR
+  receiptInput?.addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if (file) {
-      processImage(file);
+    if (file && file.type.startsWith('image/')) {
+      // We need to pass the file to the transaction module to handle the preview
+      // and then call scanReceipt. Let's simplify this.
+      // The transaction module will now call scanReceipt after handling the file.
+      handleFileDrop(file); // Re-use the file handling logic from transactions.js
+      scanReceipt(file);
     }
-  };
-
-  fileInput.click();
+    // Clean up the capture attribute after use
+    receiptInput.removeAttribute('capture');
+  });
 }
 
-async function processImage(imageFile) {
-  if (!window.Tesseract) {
-    showNotification('La librería de escaneo no se ha cargado.', 'error');
-    return;
-  }
-
-  showLoading(true);
-  const loadingText = document.querySelector('#loading p');
-  if (loadingText) loadingText.textContent = 'Analizando comprobante...';
-
-  const progressDiv = document.createElement('div');
-  progressDiv.className = 'w-full bg-gray-200 rounded-full h-2.5 mt-2';
-  progressDiv.innerHTML = `<div class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>`;
-  document.querySelector('#loading > div').appendChild(progressDiv);
-  const progressBar = progressDiv.querySelector('div');
-
+/**
+ * Processes a receipt image using Tesseract.js to extract text.
+ * @param {File} imageFile The image file of the receipt.
+ */
+export async function scanReceipt(imageFile) {
+  showLoading(true, 'Analizando comprobante...');
+  
   try {
-    const worker = await Tesseract.createWorker('spa', 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          progressBar.style.width = `${m.progress * 100}%`;
-        }
-      }
-    });
+    // Create a Tesseract worker for Spanish
+    const worker = await Tesseract.createWorker('spa');
+    
+    // Recognize text from the image
     const { data: { text } } = await worker.recognize(imageFile);
+    
+    // Terminate the worker to free up memory
     await worker.terminate();
-
+    
+    // Analyze the extracted text to find relevant data
     const extractedData = parseReceiptText(text);
+    
+    // Populate the transaction form with the found data
     populateTransactionFormWithOCR(extractedData);
 
   } catch (error) {
-    console.error('Error en OCR:', error);
-    showNotification('No se pudo analizar la imagen.', 'error');
+    console.error('Error during OCR processing:', error);
+    showNotification('No se pudo analizar la imagen. Inténtalo de nuevo.', 'error');
   } finally {
     showLoading(false);
-    if (loadingText) loadingText.textContent = 'Cargando...';
-    progressDiv.remove();
   }
 }
 
+/**
+ * Parses the raw text from a receipt to extract amount, date, and merchant.
+ * This function uses regular expressions and can be improved over time.
+ * @param {string} text The text extracted from the receipt.
+ * @returns {object} An object with the found data { amount, date, description }.
+ */
 function parseReceiptText(text) {
+  const data = {};
   console.log("Texto extraído:", text);
-  const data = {
-    amount: null,
-    description: null,
-    date: null,
-    currency: null
-  };
 
-  // --- Amount and Currency Extraction (More Robust) ---
-  const amountLines = text.match(/.*[\d,]+\.\d{2}/g) || [];
-  let potentialAmounts = [];
-
-  amountLines.forEach(line => {
-    const amountMatch = line.match(/([\d,]+\.\d{2})/);
-    if (amountMatch) {
-      const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-      let score = 1;
-      if (/TOTAL/i.test(line)) score = 5;
-      if (/SUBTOTAL/i.test(line)) score = 0.5;
-
-      const currencyMatch = line.match(/[₡\$]/);
-      const currency = currencyMatch ? (currencyMatch[0] === '$' ? 'USD' : 'CRC') : null;
-
-      potentialAmounts.push({ amount, score, currency });
-    }
-  });
-
-  // Get the amount with the highest score, or the largest amount if scores are equal
-  if (potentialAmounts.length > 0) {
-    potentialAmounts.sort((a, b) => b.score - a.score || b.amount - a.amount);
-    data.amount = potentialAmounts[0].amount;
-    data.currency = potentialAmounts[0].currency;
+  // Regex for total amount (handles formats like TOTAL 1,234.56 or Monto: $1234.56)
+  // It looks for keywords like TOTAL, MONTO, PAGAR and captures the number that follows.
+  const amountRegex = /(?:TOTAL|MONTO|PAGAR|PAGO)\s*[:\s]*[₡\$]?\s*([\d,]+\.\d{2})/i;
+  const amountMatch = text.match(amountRegex);
+  if (amountMatch && amountMatch[1]) {
+    // Clean the number format (remove commas) and convert it
+    data.amount = parseFloat(amountMatch[1].replace(/,/g, ''));
   }
 
-  // --- Date Extraction (More Formats) ---
-  const datePatterns = [
-    /(\d{2}[-\/.]\d{2}[-\/.]\d{2,4})/, // dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
-    /(\d{1,2})\s+de\s+([a-zA-Z]+)\s+de\s+(\d{4})/i // 1 de Enero de 2024
-  ];
-
-  for (const pattern of datePatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      // This part can be expanded with a date parsing library like date-fns for more robustness
-      const [day, month, year] = match[1].split(/[-\/.]/);
-      const fullYear = year.length === 2 ? `20${year}` : year;
-      data.date = new Date(`${fullYear}-${month}-${day}`);
-      break;
-    }
+  // Regex for date (handles dd/mm/yyyy, dd-mm-yyyy)
+  const dateRegex = /(\d{2})[\/\-](\d{2})[\/\-](\d{4})/;
+  const dateMatch = text.match(dateRegex);
+  if (dateMatch) {
+    // Format to yyyy-mm-dd for the input field
+    data.date = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
   }
 
-  // --- Description / Store Name Extraction ---
-  const firstLine = text.split('\n')[0].trim();
-  if (firstLine && firstLine.length > 3 && firstLine.length < 50) {
-    data.description = `Compra en ${firstLine}`;
+  // Simple logic for merchant name: often the first line of the receipt
+  const lines = text.split('\n');
+  if (lines.length > 0 && lines[0].trim().length > 3) {
+    data.description = lines[0].trim();
   }
 
   return data;
-}
-
-function populateTransactionFormWithOCR(ocrData) {
-  if (ocrData.amount) {
-    document.getElementById('transaction-amount').value = ocrData.amount;
-  }
-  if (ocrData.currency) {
-    document.getElementById('transaction-currency').value = ocrData.currency;
-  }
-  if (ocrData.description) {
-    document.getElementById('transaction-description').value = ocrData.description;
-  }
-  if (ocrData.date && !isNaN(ocrData.date)) {
-    document.getElementById('transaction-date').valueAsDate = ocrData.date;
-  }
-
-  showNotification('Formulario autocompletado. ¡Por favor, verifica los datos!', 'info');
 }

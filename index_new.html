@@ -6,8 +6,15 @@
     <title>Family Budget Manager</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Shepherd.js for guided tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@10.0.1/dist/css/shepherd.css"/>
+
     <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/print.css" media="print">
     <meta name="theme-color" content="#10B981">
     <link rel="icon" type="image/png" sizes="32x32" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
     <link rel="apple-touch-icon" href="https://em-content.zobj.net/source/twitter/376/money-bag_1f4b0.png">
@@ -28,6 +35,15 @@
         .card-hover:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
         }
     </style>
 </head>
@@ -115,7 +131,7 @@
         <!-- Navigation -->
         <nav class="gradient-bg text-white shadow-xl sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 py-4">
-                <div class="flex justify-between items-center">
+                <header class="flex justify-between items-center">
                     <div class="flex items-center gap-4">
                         <button id="menu-toggle" class="lg:hidden text-white hover:bg-white/20 p-2 rounded-lg transition">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,14 +144,17 @@
                         </h1>
                     </div>
                     <div class="flex items-center gap-4">
+                        <div id="connection-status" class="hidden items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full text-white">
+                            <!-- Content will be injected by JS -->
+                        </div>
                         <span id="user-name" class="text-sm hidden md:inline font-medium"></span>
                         <img id="user-photo" class="w-10 h-10 rounded-full border-2 border-white shadow-lg" alt="User">
                         <button id="logout-btn" class="text-sm hover:bg-white/20 px-3 py-2 rounded-lg transition font-medium">Salir</button>
                     </div>
-                </div>
+                </header>
 
                 <!-- Desktop Navigation -->
-                <div class="hidden lg:flex gap-2 mt-4">
+                <div class="hidden lg:flex gap-2 mt-4" role="navigation" aria-label="Navegación principal">
                     <button class="nav-btn px-4 py-2 rounded-lg hover:bg-white/20 transition font-medium active-nav" data-view="dashboard">
                         📊 Dashboard
                     </button>
@@ -153,7 +172,7 @@
         </nav>
 
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden lg:hidden bg-green-700 text-white shadow-lg">
+        <div id="mobile-menu" class="hidden lg:hidden bg-green-700 text-white shadow-lg" role="navigation" aria-label="Navegación móvil">
             <div class="px-4 py-2 space-y-2">
                 <button class="nav-btn-mobile w-full text-left px-4 py-3 rounded-lg hover:bg-white/20 transition font-medium active-nav-mobile" data-view="dashboard">
                     📊 Dashboard
@@ -171,21 +190,22 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
+        <main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
             <!-- Dashboard View -->
             <div id="dashboard-view" class="view-content animate-fadeIn space-y-6">
                 <!-- Dashboard Tabs -->
                 <div class="bg-white rounded-xl shadow-sm p-2">
-                    <div id="dashboard-tabs" class="flex space-x-2">
+                    <div id="dashboard-tabs" class="flex space-x-2" role="tablist" aria-label="Pestañas del dashboard">
                         <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="summary">Resumen</button>
                         <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="analytics">Análisis</button>
                         <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="goals">Metas</button>
                         <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="export">Exportar y Ajustes</button>
+                        <button class="dashboard-tab-btn flex-1 text-center px-4 py-2 rounded-lg font-semibold text-sm transition" data-tab="activity">Actividad</button>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-4" aria-label="Acciones rápidas">
                     <button id="add-expense-btn"
                         class="bg-gradient-to-r from-red-500 to-red-600 text-white py-4 px-6 rounded-2xl hover:shadow-xl transition-all text-lg font-bold shadow-md transform hover:scale-105 flex items-center justify-center gap-3">
                         <span class="text-3xl">💸</span>
@@ -196,11 +216,11 @@
                         <span class="text-3xl">💵</span>
                         + Añadir Ingreso
                     </button>
-                </div>
+                </section>
 
                 <!-- Tab Content -->
                 <div id="dashboard-tab-content">
-                    <!-- Summary Tab -->
+                    <!-- Summary Tab Panel -->
                     <div id="summary-tab" class="dashboard-tab-panel space-y-6">
                         <!-- Summary Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -228,14 +248,14 @@
                         </div>
                         <!-- Chart and Recent Activity -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                            <section class="bg-white rounded-2xl shadow-lg p-6 card-hover" aria-labelledby="chart-heading">
                                 <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
                                     <span>📊</span>
                                     Gastos por Categoría (Mes Actual)
                                 </h3>
                                 <canvas id="expense-chart"></canvas>
-                            </div>
-                            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                            </section>
+                            <section class="bg-white rounded-2xl shadow-lg p-6 card-hover" aria-labelledby="recent-activity-heading">
                                 <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
                                     <span>🕐</span>
                                     Actividad Reciente
@@ -245,23 +265,23 @@
                         </div>
                     </div>
 
-                    <!-- Analytics Tab -->
+                    <!-- Analytics Tab Panel -->
                     <div id="analytics-tab" class="dashboard-tab-panel hidden space-y-6">
                         <!-- Analytics widgets (Trends, Comparison) will be injected here -->
                     </div>
 
-                    <!-- Goals & Budgets Tab -->
+                    <!-- Goals & Budgets Tab Panel -->
                     <div id="goals-tab" class="dashboard-tab-panel hidden space-y-6">
                         <!-- Savings Goals Widget -->
-                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <section class="bg-white rounded-2xl shadow-lg p-6" aria-labelledby="goals-heading">
                             <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
                                 <span>🎯</span>
                                 Metas de Ahorro
                             </h3>
                             <div id="savings-goals-container" class="space-y-4"></div>
-                        </div>
+                        </section>
                         <!-- Budget Widget -->
-                        <div id="budget-widget-container">
+                        <section id="budget-widget-container" aria-labelledby="budgets-heading">
                             <!-- Budget widget will be injected here by app.js -->
                         </div>
                     </div>
@@ -271,7 +291,7 @@
                         <div id="export-widget-container">
                             <!-- Export widget will be injected here by app.js -->
                         </div>
-                        <!-- Settings Widget -->
+                        <!-- Settings Widget --> 
                         <div class="bg-white rounded-2xl shadow-lg p-6">
                             <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
                                 <span>⚙️</span>
@@ -293,11 +313,32 @@
                                 <!-- Add more settings buttons here in the future -->
                             </div>
                         </div>
+                        <!-- Backup & Restore Widget -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="font-bold text-xl mb-4 text-gray-800 flex items-center gap-2">
+                                <span>💾</span>
+                                Backup y Restauración
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button id="create-backup-btn" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-4 px-4 rounded-xl transition card-hover text-center">
+                                    <div class="text-3xl mb-2">📤</div>Crear Backup (JSON)
+                                </button>
+                                <label for="import-backup-input" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold py-4 px-4 rounded-xl transition card-hover text-center cursor-pointer">
+                                    <div class="text-3xl mb-2">📥</div>Restaurar desde Backup
+                                    <input type="file" id="import-backup-input" class="hidden" accept=".json">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Log Tab -->
+                    <div id="activity-tab" class="dashboard-tab-panel hidden space-y-6">
+                        <!-- Activity log content will be injected here -->
                     </div>
                 </div>
             </div>
 
-            <!-- Categories View -->
+            <!-- Categories View --> 
             <div id="categories-view" class="view-content hidden animate-fadeIn">
                 <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
                     <div class="flex justify-between items-center mb-6">
@@ -312,17 +353,17 @@
                     <!-- Filters -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                            <label for="filter-category" class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
                             <select id="filter-category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                                 <!-- Populated by JS -->
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                            <label for="filter-year" class="block text-sm font-medium text-gray-700 mb-2">Año</label>
                             <select id="filter-year" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"></select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Mes</label>
+                            <label for="filter-month" class="block text-sm font-medium text-gray-700 mb-2">Mes</label>
                             <select id="filter-month" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
                                 <option value="">Todos</option>
                                 <option value="0">Enero</option>
@@ -355,7 +396,7 @@
                 </div>
             </div>
 
-            <!-- Tasks View -->
+            <!-- Tasks View --> 
             <div id="tasks-view" class="view-content hidden animate-fadeIn">
                 <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
                     <div class="flex justify-between items-center mb-6">
@@ -371,7 +412,7 @@
                     <!-- Tasks Lists -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Pending Tasks -->
-                        <div>
+                        <section aria-labelledby="pending-tasks-heading">
                             <h3 class="font-semibold text-xl mb-4 text-orange-600 flex items-center gap-2">
                                 <span>⏳</span>
                                 Pendientes
@@ -379,9 +420,9 @@
                             <div id="pending-tasks" class="space-y-3"></div>
                         </div>
 
-                        <!-- Completed Tasks -->
+                        <!-- Completed Tasks --> 
                         <div>
-                            <h3 class="font-semibold text-xl mb-4 text-green-600 flex items-center gap-2">
+                            <h3 id="completed-tasks-heading" class="font-semibold text-xl mb-4 text-green-600 flex items-center gap-2">
                                 <span>✅</span>
                                 Completadas
                             </h3>
@@ -391,7 +432,7 @@
                 </div>
             </div>
 
-            <!-- Balance View -->
+            <!-- Balance View --> 
             <div id="balance-view" class="view-content hidden animate-fadeIn">
                 <div class="bg-white rounded-2xl shadow-lg p-6">
                     <h2 class="text-3xl font-bold mb-4 text-gray-800 flex items-center gap-3">
@@ -403,16 +444,16 @@
                     <div id="member-balance-detailed" class="space-y-4"></div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- Transaction Modal -->
-    <div id="transaction-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div id="transaction-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h2 id="modal-title" class="text-2xl font-bold text-gray-800">Añadir Transacción</h2>
-                    <button id="close-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold" aria-label="Cerrar modal">&times;</button>
                 </div>
 
                 <form id="transaction-form" class="space-y-4">
@@ -433,21 +474,24 @@
                     </div>
 
                     <!-- OCR Scan Button -->
-                    <div>
-                        <button type="button" id="scan-receipt-btn" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 border-dashed border-gray-400 text-gray-600 font-semibold hover:border-green-500 hover:text-green-600 transition">
-                            <span>📸</span> Escanear Comprobante con la Cámara
+                    <div class="grid grid-cols-2 gap-4">
+                        <button type="button" id="scan-receipt-camera-btn" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 border-dashed border-gray-400 text-gray-600 font-semibold hover:border-green-500 hover:text-green-600 transition">
+                            <span>📸</span> Usar Cámara
+                        </button>
+                        <button type="button" id="scan-receipt-file-btn" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 border-dashed border-gray-400 text-gray-600 font-semibold hover:border-blue-500 hover:text-blue-600 transition">
+                            <span>📁</span> Subir Archivo
                         </button>
                     </div>
 
                     <!-- Amount and Currency -->
                     <div class="grid grid-cols-3 gap-4">
                         <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+                            <label for="transaction-amount" class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
                             <input type="number" id="transaction-amount" step="0.01" required
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+                            <label for="transaction-currency" class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
                             <select id="transaction-currency" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                                 <option value="CRC">₡ CRC</option>
                                 <option value="USD" selected>$ USD</option>
@@ -455,30 +499,30 @@
                         </div>
                     </div>
 
-                    <!-- Description -->
+                    <!-- Description --> 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <label for="transaction-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
                         <input type="text" id="transaction-description" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
-                    <!-- Category -->
+                    <!-- Category --> 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                        <label for="transaction-category" class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                         <select id="transaction-category" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"><!-- Populated by JS --></select>
                     </div>
 
-                    <!-- Date -->
+                    <!-- Date --> 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                        <label for="transaction-date" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
                         <input type="date" id="transaction-date" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
                     <!-- Paid By -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Pagado por</label>
+                        <label for="transaction-paidby" class="block text-sm font-medium text-gray-700 mb-1">Pagado por</label>
                         <select id="transaction-paidby" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                             <option value="">Seleccionar...</option>
@@ -527,23 +571,23 @@
     </div>
 
     <!-- Task Modal -->
-    <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-fadeIn">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Nueva Tarea</h2>
-                    <button id="close-task-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                    <h2 id="task-modal-title" class="text-2xl font-bold text-gray-800">Nueva Tarea</h2>
+                    <button id="close-task-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold" aria-label="Cerrar modal">&times;</button>
                 </div>
 
                 <form id="task-form" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                        <label for="task-title" class="block text-sm font-medium text-gray-700 mb-1">Título</label>
                         <input type="text" id="task-title" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Asignar a</label>
+                        <label for="task-assigned" class="block text-sm font-medium text-gray-700 mb-1">Asignar a</label>
                         <select id="task-assigned" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                             <option value="">Seleccionar...</option>
@@ -551,7 +595,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha límite</label>
+                        <label for="task-duedate" class="block text-sm font-medium text-gray-700 mb-1">Fecha límite</label>
                         <input type="date" id="task-duedate" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
@@ -566,30 +610,30 @@
     </div>
 
     <!-- Recurring Transactions Modal -->
-    <div id="recurring-transactions-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div id="recurring-transactions-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="recurring-modal-title">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col animate-fadeIn">
             <div class="p-6 border-b">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-800">Gestionar Transacciones Recurrentes</h2>
-                    <button id="close-recurring-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                    <h2 id="recurring-modal-title" class="text-2xl font-bold text-gray-800">Gestionar Transacciones Recurrentes</h2>
+                    <button id="close-recurring-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold" aria-label="Cerrar modal">&times;</button>
                 </div>
             </div>
             <div class="flex-1 p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Add new recurring transaction form -->
                 <div class="border-r-0 md:border-r pr-0 md:pr-6">
-                    <h3 class="text-xl font-semibold mb-4">Añadir Nueva</h3>
+                    <h3 id="recurring-form-title" class="text-xl font-semibold mb-4">Añadir Nueva</h3>
                     <form id="recurring-transaction-form" class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                            <label for="recurring-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
                             <input type="text" id="recurring-description" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+                                <label for="recurring-amount" class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
                                 <input type="number" id="recurring-amount" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+                                <label for="recurring-currency" class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
                                 <select id="recurring-currency" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                     <option value="CRC">₡ CRC</option>
                                     <option value="USD">$ USD</option>
@@ -597,31 +641,31 @@
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                            <label for="recurring-category" class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                             <select id="recurring-category" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></select>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Frecuencia</label>
+                                <label for="recurring-frequency" class="block text-sm font-medium text-gray-700 mb-1">Frecuencia</label>
                                 <select id="recurring-frequency" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                     <option value="monthly">Mensual</option>
                                     <option value="weekly">Semanal</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Próximo Pago</label>
+                                <label for="recurring-start-date" class="block text-sm font-medium text-gray-700 mb-1">Próximo Pago</label>
                                 <input type="date" id="recurring-start-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                             </div>
                         </div>
                         <!-- Shared Expense for Recurring -->
                         <div>
-                            <label class="flex items-center gap-2">
+                            <label for="recurring-transaction-shared" class="flex items-center gap-2">
                                 <input type="checkbox" id="recurring-transaction-shared" class="w-5 h-5 text-green-600 rounded focus:ring-green-500">
                                 <span class="text-sm font-medium text-gray-700">¿Es un gasto compartido?</span>
                             </label>
                         </div>
                         <!-- Shared Options for Recurring -->
-                        <div id="recurring-shared-options" class="hidden space-y-2 bg-gray-50 p-4 rounded-lg">
+                        <div id="recurring-shared-options" class="hidden space-y-2 bg-gray-50 p-4 rounded-lg" role="group" aria-labelledby="recurring-shared-heading">
                             <p class="text-sm font-medium text-gray-700">Dividir entre:</p>
                             <div id="recurring-shared-members"></div>
                         </div>
@@ -639,12 +683,12 @@
     </div>
 
     <!-- Manage Members Modal -->
-    <div id="manage-members-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div id="manage-members-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="members-modal-title">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col animate-fadeIn">
             <div class="p-6 border-b">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-800">Gestionar Miembros del Grupo</h2>
-                    <button id="close-members-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                    <h2 id="members-modal-title" class="text-2xl font-bold text-gray-800">Gestionar Miembros del Grupo</h2>
+                    <button id="close-members-modal" class="text-gray-500 hover:text-gray-700 text-3xl font-bold" aria-label="Cerrar modal">&times;</button>
                 </div>
             </div>
             <div class="flex-1 p-6 overflow-y-auto">
@@ -655,7 +699,7 @@
     </div>
 
     <!-- Loading Spinner -->
-    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50" role="alert" aria-live="assertive">
         <div class="bg-white rounded-2xl p-8 shadow-2xl">
             <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto"></div>
             <p class="mt-4 text-gray-700 font-semibold">Cargando...</p>
@@ -670,6 +714,16 @@
     <script type="module" src="js/balance.js"></script>
     <script type="module" src="js/categories.js"></script>
     <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/notifications.js"></script>
     <script type="module" src="js/goals.js"></script>
+    <script type="module" src="js/ocr.js"></script>
+    <script type="module" src="js/recurring.js"></script>
+    <script type="module" src="js/categories-manager.js"></script>
+    <script type="module" src="js/connectivity.js"></script>
+    <script type="module" src="js/shortcuts.js"></script>
+    <!-- Shepherd.js for guided tour -->
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@10.0.1/dist/js/shepherd.min.js"></script>
+    <script type="module" src="js/backup.js"></script>
+    <script type="module" src="js/tour.js"></script>
 </body>
 </html>

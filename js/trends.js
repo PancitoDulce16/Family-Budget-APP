@@ -1,5 +1,6 @@
 // Trends and Analytics Module
 import { formatCurrency } from './utils.js';
+import { isDarkModeEnabled } from './dark-mode.js';
 let familyGroupCurrency = 'USD';
 
 export function createTrendsChart(transactions) {
@@ -57,6 +58,9 @@ export function createTrendsChart(transactions) {
   });
 
   function updateChart() {
+    const darkMode = isDarkModeEnabled();
+    const textColor = darkMode ? '#D1D5DB' : '#374151';
+    const gridColor = darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
     const data = prepareChartData(transactions, currentPeriod);
 
     if (currentChart) {
@@ -108,8 +112,9 @@ export function createTrendsChart(transactions) {
             labels: {
               font: {
                 size: 14,
-                weight: 'bold'
+                weight: 'bold',
               },
+              color: textColor,
               padding: 20,
               usePointStyle: true
             }
@@ -143,16 +148,18 @@ export function createTrendsChart(transactions) {
               callback: function(value) {
                 return formatCurrency(value, familyGroupCurrency, true).split('.')[0]; // Symbol + integer part
               },
+              color: textColor,
               font: {
                 size: 12
               }
             },
             grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
+              color: gridColor
             }
           },
           x: {
             ticks: {
+              color: textColor,
               font: {
                 size: 12
               }

@@ -204,8 +204,11 @@ export function createExportWidget(transactions, familyGroupName, categoryTotals
         <span>📥</span>
         Exportar Datos
       </h3>
+      <button id="print-report-btn" class="text-sm bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition font-semibold">
+        🖨️ Imprimir Reporte
+      </button>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       <button id="export-excel-btn" class="flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl hover:opacity-90 transition font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1">
         <span class="text-2xl">📊</span>
         <div class="text-left">
@@ -228,6 +231,7 @@ export function createExportWidget(transactions, familyGroupName, categoryTotals
 
   const excelBtn = widget.querySelector('#export-excel-btn');
   const pdfBtn = widget.querySelector('#export-pdf-btn');
+  const printBtn = widget.querySelector('#print-report-btn');
 
   excelBtn.addEventListener('click', () => {
     exportToExcel(transactions, familyGroupName, customCategories);
@@ -235,6 +239,10 @@ export function createExportWidget(transactions, familyGroupName, categoryTotals
 
   pdfBtn.addEventListener('click', () => {
     exportToPDF(transactions, familyGroupName, categoryTotals, customCategories);
+  });
+
+  printBtn.addEventListener('click', () => {
+    window.print();
   });
 
   return widget;
