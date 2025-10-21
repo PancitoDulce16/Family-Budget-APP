@@ -286,3 +286,79 @@ export function showFamilyGroupSetup() {
     }
   });
 }
+
+/**
+ * Opens the members management modal.
+ * @param {string} familyGroupId The ID of the family group.
+ * @param {Array} members The list of family members.
+ * @param {string} currentUserId The ID of the current user, to prevent self-role-change.
+ */
+export async function openMembersManager(familyGroupId, members, currentUserId) {
+  const modal = document.getElementById('manage-members-modal');
+  if (!modal) return;
+
+  modal.classList.remove('hidden');
+  modal.querySelector('#close-members-modal').addEventListener('click', () => modal.classList.add('hidden'));
+
+  const listContainer = modal.querySelector('#members-list');
+  listContainer.innerHTML = '<p class="text-gray-500">Cargando miembros...</p>';
+
+  const groupDoc = await getDoc(doc(db, 'familyGroups', familyGroupId));
+  if (!groupDoc.exists()) {
+    listContainer.innerHTML = '<p class="text-red-500">Error: No se encontró el grupo.</p>';
+    return;
+  }
+
+  const roles = groupDoc.data().roles || {};
+  listContainer.innerHTML = '';
+
+  members.forEach(member => {
+    const memberRole = roles[member.id] || 'member';
+    const isCurrentUser = member.id === currentUserId;
+
+    const card = document.createElement('div');
+    card.className = 'flex items-center justify-between bg-gray-50 p-4 rounded-lg border';
+    card.innerHTML = `
+      <div class="flex items-center gap-3">
+        <img src="${member.photoURL}" alt="${member.displayName}" class="w-10 h-10 rounded-full">
+        <div>
+          <p class="font-semibold">${member.displayName} ${isCurrentUser ? '<span class="text-xs text-green-600">(Tú)</span>' : ''}</p>
+          <p class="text-sm text-gray-500">${member.email}</p>
+        </div>
+      </div>
+      <div>
+        <select data-member-id="${member.id}" class="role-select border-gray-300 rounded-md" ${isCurrentUser ? 'disabled' : ''}>
+          <option value="admin" ${memberRole === 'admin' ? 'selected' : ''}>Admin</option>
+          <option value="member" ${memberRole === 'member' ? 'selected' : ''}>Miembro</option>
+          <option value="viewer" ${memberRole === 'viewer' ? 'selected' : ''}>Espectador</option>
+        </select>
+      </div>
+    `;
+    listContainer.appendChild(card);
+  });
+
+  // Add event listeners to role selectors
+  listContainer.querySelectorAll('.role-select').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const memberId = e.target.dataset.memberId;
+      const newRole = e.target.value;
+
+      try {
+        showLoading(true);
+        const groupRef = doc(db, 'familyGroups', familyGroupId);
+        // Use dot notation for updating a field within a map
+        await updateDoc(groupRef, {
+          [`roles.${memberId}`]: newRole
+        });
+        showNotification(`Rol de ${members.find(m => m.id === memberId).displayName} actualizado a ${newRole}.`, 'success');
+      } catch (error) {
+        console.error("Error updating role:", error);
+        showNotification('Error al actualizar el rol.', 'error');
+        // Revert UI change on failure
+        e.target.value = roles[memberId] || 'member';
+      } finally {
+        showLoading(false);
+      }
+    });
+  });
+}

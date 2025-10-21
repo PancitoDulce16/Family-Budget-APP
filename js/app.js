@@ -13,11 +13,11 @@ import {
   getCurrentEditingTransaction,
   clearCurrentEditingTransaction,
   createTransactionActions,
-  processRecurringTransactions,
-  openRecurringTransactionsManager,
-  openMembersManager
+  processRecurringTransactions,  
+  openRecurringTransactionsManager
 } from './transactions.js';
 import { createSearchBar, filterTransactions } from './search.js';
+import { openMembersManager } from './family-group.js';
 import { initializeBudgets, createBudgetWidget, getCurrentBudgets } from './budgets.js';
 import { createExportWidget } from './export.js';
 import { createTrendsChart, createComparisonWidget } from './trends.js';
