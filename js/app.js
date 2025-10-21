@@ -204,7 +204,16 @@ function updateUIForRole() {
     document.getElementById('manage-members-btn')
   ];
 
-  adminOnlyButtons.forEach(btn => btn?.classList.toggle('hidden', !isAdmin));
+  adminOnlyButtons.forEach(btn => {
+    if (btn) {
+      btn.classList.toggle('hidden', !isAdmin);
+      // Si es el botón de miembros y solo hay un miembro, deshabilitarlo.
+      if (btn.id === 'manage-members-btn' && familyMembers.length <= 1) {
+        btn.disabled = true;
+        btn.title = 'Esta opción es para grupos con más de un miembro.';
+      }
+    }
+  });
 }
 
 async function loadCustomCategories() {
